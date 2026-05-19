@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'login_page.dart';
+import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 import '../utils/constants.dart';
+import '../utils/helpers.dart';
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
 import 'marks_entry_page.dart';
 import 'leave_page.dart';
 import 'my_classes_page.dart';
+import 'login_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -19,7 +22,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = true;
   Map<String, dynamic>? _dashboardData;
   String? _errorMessage;
@@ -38,7 +40,9 @@ class _DashboardPageState extends State<DashboardPage> {
     });
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      
       if (token == null) {
         _handleLogout();
         return;
@@ -56,7 +60,7 @@ class _DashboardPageState extends State<DashboardPage> {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            _dashboardData = data['data'];
+            _dashboardData = data;
             _isLoading = false;
           });
         }
@@ -65,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Failed to load dashboard: ${response.statusCode}';
+            _errorMessage = 'Failed to load dashboard';
             _isLoading = false;
           });
         }
@@ -81,7 +85,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _handleLogout() async {
-    await _storage.deleteAll();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logout();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -92,19 +97,23 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('EduHard'),
+        title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            onPressed: _fetchDashboardData,
-            icon: const Icon(Icons.notifications_none_rounded),
+            icon: Icon(themeProvider.mode == ThemeMode.light 
+              ? Icons.dark_mode_outlined 
+              : Icons.light_mode_outlined),
+            onPressed: () => themeProvider.toggleTheme(),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      drawer: _buildDrawer(),
+      drawer: _buildDrawer(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
@@ -120,7 +129,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
@@ -138,21 +147,24 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDrawer() {
-    final name = _dashboardData?['teacher']?['name'] ?? 'Teacher';
+  Widget _buildDrawer(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final name = user?['name'] ?? 'Teacher';
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Drawer(
-      backgroundColor: Colors.white,
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-            accountName: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            accountEmail: const Text('Teacher Portal'),
+            decoration: BoxDecoration(color: colorScheme.primary),
+            accountName: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            accountEmail: const Text('Teacher Portal', style: TextStyle(color: Colors.white70)),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: Text(
                 name.isNotEmpty ? name[0] : 'T',
-                style: TextStyle(fontSize: 32, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 32, color: colorScheme.primary, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -185,8 +197,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const LeavePage()));
                 }),
-                const Divider(indent: 20, endIndent: 20),
-                _buildDrawerItem(Icons.person_outline_rounded, 'Profile', false, () {}),
+                _buildDrawerItem(Icons.person_outline_rounded, 'Profile', false, () {
+                   Navigator.pop(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+                }),
+                const Divider(),
                 _buildDrawerItem(Icons.logout_rounded, 'Logout', false, _handleLogout),
               ],
             ),
@@ -197,24 +212,23 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDrawerItem(IconData icon, String title, bool selected, VoidCallback onTap) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: selected ? Theme.of(context).primaryColor : Colors.grey[600]),
+      leading: Icon(icon, color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant),
       title: Text(
         title,
         style: TextStyle(
           fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          color: selected ? Theme.of(context).primaryColor : Colors.black87,
+          color: selected ? colorScheme.primary : colorScheme.onSurface,
         ),
       ),
       onTap: onTap,
       selected: selected,
-      selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
     );
   }
 
   Widget _buildDashboardContent() {
+    final teacher = _dashboardData?['teacher'];
     final glance = _dashboardData?['today_at_a_glance'];
     final schedule = _dashboardData?['today_schedule'] as List?;
     final myClasses = _dashboardData?['my_class'] as List?;
@@ -227,7 +241,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeHeader(),
+            _buildWelcomeHeader(teacher?['name'] ?? 'Teacher'),
             const SizedBox(height: 24),
             _buildStatGrid(glance),
             const SizedBox(height: 32),
@@ -249,36 +263,28 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildWelcomeHeader() {
-    final name = _dashboardData?['teacher']?['name'] ?? 'Teacher';
-    return Row(
+  Widget _buildWelcomeHeader(String name) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hello, $name 👋',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Here is your summary for today',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
-          ),
+        Text(
+          'Hello, $name 👋',
+          style: textTheme.headlineMedium?.copyWith(fontSize: 24),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Here is your summary for today',
+          style: textTheme.bodyMedium,
         ),
       ],
     );
   }
 
   Widget _buildStatGrid(Map<String, dynamic>? glance) {
-    if (glance == null) return const SizedBox.shrink();
-
-    final classes = glance['todays_classes'];
-    final attendance = glance['attendance_status'];
-    final pending = glance['pending_marks'];
+    final classes = glance?['todays_classes'];
+    final attendance = glance?['attendance_status'];
+    final pending = glance?['pending_marks'] ?? 0;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -321,34 +327,31 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-                Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ],
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -358,10 +361,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         TextButton(
           onPressed: onSeeAll,
-          child: Text('See All', style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+          child: const Text('See All', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -369,16 +372,18 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildScheduleList(List? schedule) {
     if (schedule == null || schedule.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        width: double.infinity,
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: Column(
-          children: [
-            Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text('No classes for today', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500)),
-          ],
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.event_busy_rounded, size: 48, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 12),
+                Text('No classes for today', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -386,12 +391,14 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       children: schedule.map((item) {
         final isCurrent = item['status'] == 'current';
+        final colorScheme = Theme.of(context).colorScheme;
+        
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: isCurrent ? Border.all(color: Theme.of(context).primaryColor, width: 2) : null,
+            border: isCurrent ? Border.all(color: colorScheme.primary, width: 2) : null,
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
             ],
@@ -399,31 +406,21 @@ class _DashboardPageState extends State<DashboardPage> {
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
-              width: 60,
+              width: 70,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isCurrent ? Theme.of(context).primaryColor : Colors.grey[100],
+                color: isCurrent ? colorScheme.primary : colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    item['start_time']?.split(':')[0] ?? '',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isCurrent ? Colors.white : Colors.black87,
-                      fontSize: 16,
-                    ),
+              child: Center(
+                child: Text(
+                  formatTime12hr(item['start_time']).split(' ')[0],
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isCurrent ? Colors.white : colorScheme.onSurfaceVariant,
+                    fontSize: 14,
                   ),
-                  Text(
-                    'AM',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isCurrent ? Colors.white.withOpacity(0.8) : Colors.grey[600],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             title: Text(
@@ -431,16 +428,16 @@ class _DashboardPageState extends State<DashboardPage> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Text(
-              '${item['class_name']} ${item['section_name']} • Period ${item['period_name']}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              '${item['class_name']} ${item['section_name']} • ${item['period_name']}',
+              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
             ),
             trailing: isCurrent
                 ? Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(8)),
-                    child: const Text('LIVE', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(color: colorScheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Text('LIVE', style: TextStyle(color: colorScheme.error, fontSize: 10, fontWeight: FontWeight.bold)),
                   )
-                : Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
+                : Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
             onTap: () {
                Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
             },
@@ -463,19 +460,19 @@ class _DashboardPageState extends State<DashboardPage> {
         separatorBuilder: (context, index) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final item = myClasses[index];
+          final colorScheme = Theme.of(context).colorScheme;
           return Container(
             width: 200,
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.8)],
+                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).primaryColor.withOpacity(0.3),
+                  color: colorScheme.primary.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -494,39 +491,46 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 );
               },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${item['class_name']} ${item['section_name']}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 20),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${item['student_count'] ?? 0} Students',
-                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                        child: const Text(
-                          'Class Teacher',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${item['class_name']} ${item['section_name']}',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 20),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${item['student_count'] ?? 0} Students',
+                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                          child: const Text(
+                            'Class Teacher',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

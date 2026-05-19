@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'login_page.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'dashboard_page.dart';
+import 'login_page.dart';
 
 class WelcomePage extends StatelessWidget {
   final String name;
   const WelcomePage({super.key, required this.name});
 
   Future<void> _logout(BuildContext context) async {
-    const storage = FlutterSecureStorage();
-    await storage.deleteAll();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logout();
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -21,6 +22,9 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -44,31 +48,26 @@ class WelcomePage extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: colorScheme.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.celebration,
                     size: 80,
-                    color: Theme.of(context).primaryColor,
+                    color: colorScheme.primary,
                   ),
                 ),
               ),
               const SizedBox(height: 40),
               Text(
                 'Welcome, $name!',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                style: textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                'You have successfully logged in to the EduHard Teacher Portal. Ready to manage your classes?',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                'You have successfully logged in to the EduCore Teacher Portal. Ready to manage your classes?',
+                style: textTheme.bodyLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 60),
@@ -89,7 +88,7 @@ class WelcomePage extends StatelessWidget {
                 onPressed: () => _logout(context),
                 child: Text(
                   'Sign Out',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
               ),
               const Spacer(),

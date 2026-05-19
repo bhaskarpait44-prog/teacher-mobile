@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
+import '../utils/helpers.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -12,7 +14,6 @@ class AttendancePage extends StatefulWidget {
 }
 
 class _AttendancePageState extends State<AttendancePage> {
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = true;
   List<dynamic> _classes = [];
   String? _errorMessage;
@@ -31,7 +32,8 @@ class _AttendancePageState extends State<AttendancePage> {
     });
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
       final response = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/status'),
         headers: {
@@ -75,7 +77,10 @@ class _AttendancePageState extends State<AttendancePage> {
           IconButton(
             icon: const Icon(Icons.history_rounded),
             onPressed: () {
-              // Navigation to attendance reports/history
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AttendanceReportsPage()),
+              );
             },
           ),
         ],
@@ -92,11 +97,14 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   Widget _buildErrorWidget() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+          Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+          const SizedBox(height: 16),
+          Text(_errorMessage!),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _fetchAttendanceStatus, child: const Text('Retry')),
         ],
@@ -106,7 +114,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
   Widget _buildClassList() {
     if (_classes.isEmpty) {
-      return const Center(child: Text('No classes assigned to you for attendance.'));
+      return const Center(child: Text('No classes assigned to you.'));
     }
 
     return ListView.builder(
@@ -114,39 +122,39 @@ class _AttendancePageState extends State<AttendancePage> {
       itemCount: _classes.length,
       itemBuilder: (context, index) {
         final item = _classes[index];
-        final bool isMarked = item['marked_students'] >= item['total_students'] && item['total_students'] > 0;
+        final total = item['total_students'] ?? 0;
+        final marked = item['marked_students'] ?? 0;
+        final bool isFullyMarked = marked >= total && total > 0;
+        final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: (isMarked ? Colors.green : Colors.orange).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: (isFullyMarked ? Colors.green : Colors.orange).withOpacity(0.1),
               child: Icon(
-                isMarked ? Icons.check_circle_rounded : Icons.pending_rounded,
-                color: isMarked ? Colors.green : Colors.orange,
+                isFullyMarked ? Icons.check_circle : Icons.pending,
+                color: isFullyMarked ? Colors.green : Colors.orange,
               ),
             ),
             title: Text(
               '${item['class_name']} ${item['section_name']}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text('Marked: ${item['marked_students']}/${item['total_students']} students'),
+                Text('Marked: $marked/$total students'),
+                const SizedBox(height: 4),
                 LinearProgressIndicator(
-                  value: item['total_students'] > 0 ? item['marked_students'] / item['total_students'] : 0,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(isMarked ? Colors.green : Colors.orange),
+                  value: total > 0 ? marked / total : 0,
+                  backgroundColor: colorScheme.surfaceVariant,
+                  color: isFullyMarked ? Colors.green : Colors.orange,
                 ),
               ],
             ),
-            trailing: const Icon(Icons.chevron_right_rounded),
+            trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
@@ -186,22 +194,27 @@ class MarkAttendancePage extends StatefulWidget {
 }
 
 class _MarkAttendancePageState extends State<MarkAttendancePage> {
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = true;
   bool _isSaving = false;
   List<dynamic> _students = [];
-  Map<dynamic, String> _attendance = {}; 
-  String? _errorMessage;
+  Map<int, String> _attendance = {};
   DateTime _selectedDate = DateTime.now();
-  String? _reason;
+  String? _errorMessage;
   bool _requiresReason = false;
   bool _isHoliday = false;
   String? _holidayName;
+  final _reasonController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchStudents();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchStudents() async {
@@ -212,14 +225,13 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     });
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
       final dateStr = _selectedDate.toIso8601String().split('T')[0];
+      
       final response = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/students?class_id=${widget.classId}&section_id=${widget.sectionId}&date=$dateStr'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -256,7 +268,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   }
 
   Future<void> _submitAttendance() async {
-    if (_requiresReason && (_reason == null || _reason!.trim().isEmpty)) {
+    if (_requiresReason && _reasonController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please provide a reason for marking/editing attendance')),
       );
@@ -266,7 +278,9 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     setState(() => _isSaving = true);
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      
       final records = _attendance.entries.map((e) => {
         'enrollment_id': e.key,
         'status': e.value,
@@ -283,7 +297,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
           'section_id': widget.sectionId,
           'date': _selectedDate.toIso8601String().split('T')[0],
           'records': records,
-          'reason': _reason,
+          'reason': _reasonController.text.trim(),
         }),
       );
 
@@ -297,24 +311,25 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       } else {
         final data = jsonDecode(response.body);
         if (mounted) {
-          setState(() {
-            _errorMessage = data['message'] ?? 'Failed to submit attendance';
-            _isSaving = false;
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Failed to submit attendance'), backgroundColor: Colors.red),
+          );
+          setState(() => _isSaving = false);
         }
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _errorMessage = 'An error occurred: $e';
-          _isSaving = false;
-        });
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.className} - ${widget.sectionName}'),
@@ -345,7 +360,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
-                    color: Colors.blue[50],
+                    color: colorScheme.surfaceVariant,
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline, color: Colors.blue),
@@ -358,42 +373,32 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextField(
+                      controller: _reasonController,
                       decoration: const InputDecoration(
                         labelText: 'Reason for marking/editing',
-                        hintText: 'e.g., Internet issues, system down, etc.',
                         prefixIcon: Icon(Icons.comment_rounded),
                       ),
-                      onChanged: (val) => _reason = val,
                     ),
                   ),
                 Expanded(
                   child: _errorMessage != null
-                      ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+                      ? Center(child: Text(_errorMessage!))
                       : ListView.separated(
-                          padding: const EdgeInsets.only(bottom: 80),
+                          padding: const EdgeInsets.only(bottom: 100),
                           itemCount: _students.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1, indent: 70),
+                          separatorBuilder: (context, index) => const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final student = _students[index];
                             final enrollmentId = student['enrollment_id'];
                             final status = _attendance[enrollmentId];
 
                             return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               leading: CircleAvatar(
-                                radius: 25,
-                                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                                child: Text(
-                                  student['first_name'][0],
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
-                                ),
+                                child: Text(student['first_name'][0]),
                               ),
-                              title: Text(
-                                '${student['first_name']} ${student['last_name']}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text('Roll No: ${student['roll_number'] ?? 'N/A'}'),
-                              trailing: _buildStatusPicker(enrollmentId, status),
+                              title: Text('${student['first_name']} ${student['last_name']}'),
+                              subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
+                              trailing: _buildStatusChip(enrollmentId, status),
                             );
                           },
                         ),
@@ -407,10 +412,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-      ),
+      color: Theme.of(context).cardColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -418,15 +420,15 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Date: ${_selectedDate.toIso8601String().split('T')[0]}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                formatDate(_selectedDate.toIso8601String()),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text('${_students.length} Students Total', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              Text('${_students.length} Students', style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
           Row(
             children: [
-              TextButton.icon(
+              TextButton(
                 onPressed: () {
                   setState(() {
                     for (var student in _students) {
@@ -434,11 +436,9 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                     }
                   });
                 },
-                icon: const Icon(Icons.done_all_rounded, size: 20),
-                label: const Text('All P'),
-                style: TextButton.styleFrom(foregroundColor: Colors.green),
+                child: const Text('All P', style: TextStyle(color: Colors.green)),
               ),
-              TextButton.icon(
+              TextButton(
                 onPressed: () {
                   setState(() {
                     for (var student in _students) {
@@ -446,9 +446,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                     }
                   });
                 },
-                icon: const Icon(Icons.close_rounded, size: 20),
-                label: const Text('All A'),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('All A', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -457,79 +455,395 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     );
   }
 
-  Widget _buildStatusPicker(dynamic enrollmentId, String? currentStatus) {
+  Widget _buildStatusChip(int enrollmentId, String? status) {
     return PopupMenuButton<String>(
-      initialValue: currentStatus,
-      onSelected: (String value) {
-        setState(() {
-          _attendance[enrollmentId] = value;
-        });
+      onSelected: (val) {
+        setState(() => _attendance[enrollmentId] = val);
       },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildPopupItem('present', 'Present', Colors.green),
-        _buildPopupItem('absent', 'Absent', Colors.red),
-        _buildPopupItem('late', 'Late', Colors.orange),
-        _buildPopupItem('half_day', 'Half Day', Colors.blue),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'present', child: Text('Present')),
+        const PopupMenuItem(value: 'absent', child: Text('Absent')),
+        const PopupMenuItem(value: 'late', child: Text('Late')),
+        const PopupMenuItem(value: 'half_day', child: Text('Half Day')),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: _getStatusColor(currentStatus).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _getStatusColor(currentStatus).withOpacity(0.5)),
+          color: getStatusColor(status, context).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: getStatusColor(status, context).withOpacity(0.5)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              currentStatus?.toUpperCase() ?? 'NONE',
-              style: TextStyle(color: _getStatusColor(currentStatus), fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, color: _getStatusColor(currentStatus), size: 16),
-          ],
+        child: Text(
+          status?.toUpperCase() ?? 'N/A',
+          style: TextStyle(
+            color: getStatusColor(status, context),
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
       ),
     );
-  }
-
-  PopupMenuItem<String> _buildPopupItem(String value, String label, Color color) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: Row(
-        children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 12),
-          Text(label),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(String? status) {
-    switch (status) {
-      case 'present': return Colors.green;
-      case 'absent': return Colors.red;
-      case 'late': return Colors.orange;
-      case 'half_day': return Colors.blue;
-      case 'holiday': return Colors.purple;
-      default: return Colors.grey;
-    }
   }
 
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
+        color: Theme.of(context).cardColor,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
       ),
       child: ElevatedButton(
         onPressed: _isSaving ? null : _submitAttendance,
         child: _isSaving
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Text('Save Attendance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Text('Save Attendance'),
       ),
     );
+  }
+}
+
+class AttendanceReportsPage extends StatefulWidget {
+  const AttendanceReportsPage({super.key});
+
+  @override
+  State<AttendanceReportsPage> createState() => _AttendanceReportsPageState();
+}
+
+class _AttendanceReportsPageState extends State<AttendanceReportsPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int? _selectedClassId;
+  int? _selectedSectionId;
+  int _selectedMonth = DateTime.now().month;
+  int _selectedYear = DateTime.now().year;
+  List<dynamic> _classes = [];
+  bool _isLoadingClasses = true;
+  bool _isLoadingData = false;
+  
+  List<dynamic> _registerData = [];
+  List<dynamic> _summaryData = [];
+  List<dynamic> _thresholdData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _fetchActiveTabData();
+      }
+    });
+    _fetchClasses();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchClasses() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/my-classes'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _classes = data['data']['classes'] ?? [];
+            if (_classes.isNotEmpty) {
+              _selectedClassId = _classes[0]['class_id'];
+              _selectedSectionId = _classes[0]['section_id'];
+              _fetchActiveTabData();
+            }
+            _isLoadingClasses = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingClasses = false);
+    }
+  }
+
+  void _fetchActiveTabData() {
+    switch (_tabController.index) {
+      case 0: _fetchRegister(); break;
+      case 1: _fetchSummary(); break;
+      case 2: _fetchThreshold(); break;
+    }
+  }
+
+  Future<void> _fetchRegister() async {
+    if (_selectedClassId == null) return;
+    setState(() => _isLoadingData = true);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/register?class_id=$_selectedClassId&section_id=$_selectedSectionId&month=$_selectedMonth&year=$_selectedYear'),
+        headers: {'Authorization': 'Bearer ${authProvider.token}'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) setState(() => _registerData = data['data'] ?? []);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingData = false);
+  }
+
+  Future<void> _fetchSummary() async {
+    if (_selectedClassId == null) return;
+    setState(() => _isLoadingData = true);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/reports/summary?class_id=$_selectedClassId&section_id=$_selectedSectionId'),
+        headers: {'Authorization': 'Bearer ${authProvider.token}'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) setState(() => _summaryData = data['data'] ?? []);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingData = false);
+  }
+
+  Future<void> _fetchThreshold() async {
+    setState(() => _isLoadingData = true);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/reports/below-threshold'),
+        headers: {'Authorization': 'Bearer ${authProvider.token}'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) setState(() => _thresholdData = data['data'] ?? []);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingData = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Attendance Reports'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Register'),
+            Tab(text: 'Summary'),
+            Tab(text: 'Below 75%'),
+          ],
+        ),
+      ),
+      body: _isLoadingClasses 
+        ? const Center(child: CircularProgressIndicator())
+        : TabBarView(
+            controller: _tabController,
+            children: [
+              _buildRegisterTab(),
+              _buildSummaryTab(),
+              _buildThresholdTab(),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildClassSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: DropdownButtonFormField<String>(
+        value: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
+        decoration: const InputDecoration(labelText: 'Select Class', isDense: true),
+        items: _classes.map((c) {
+          return DropdownMenuItem(
+            value: '${c['class_id']}-${c['section_id']}',
+            child: Text('${c['class_name']} ${c['section_name']}'),
+          );
+        }).toList(),
+        onChanged: (val) {
+          if (val != null) {
+            final parts = val.split('-');
+            setState(() {
+              _selectedClassId = int.parse(parts[0]);
+              _selectedSectionId = int.parse(parts[1]);
+              _fetchActiveTabData();
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildRegisterTab() {
+    return Column(
+      children: [
+        _buildClassSelector(),
+        _buildMonthYearPicker(),
+        Expanded(
+          child: _isLoadingData 
+            ? const Center(child: CircularProgressIndicator())
+            : _registerData.isEmpty 
+              ? const Center(child: Text('No register data available'))
+              : _buildRegisterGrid(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMonthYearPicker() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<int>(
+              value: _selectedMonth,
+              decoration: const InputDecoration(labelText: 'Month', isDense: true),
+              items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(getMonthName(i + 1)))),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedMonth = val);
+                  _fetchRegister();
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: DropdownButtonFormField<int>(
+              value: _selectedYear,
+              decoration: const InputDecoration(labelText: 'Year', isDense: true),
+              items: List.generate(3, (i) => DropdownMenuItem(value: 2024 + i, child: Text('${2024 + i}'))),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedYear = val);
+                  _fetchRegister();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String getMonthName(int m) {
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1];
+  }
+
+  Widget _buildRegisterGrid() {
+    // Simplified Register Grid: Student Name | Status per day
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        child: DataTable(
+          columnSpacing: 20,
+          columns: [
+            const DataColumn(label: Text('Student')),
+            ...List.generate(31, (i) => DataColumn(label: Text('${i + 1}', style: const TextStyle(fontSize: 10)))),
+          ],
+          rows: _registerData.map<DataRow>((student) {
+            final attendance = student['attendance'] as Map<String, dynamic>;
+            return DataRow(
+              cells: [
+                DataCell(Text(student['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                ...List.generate(31, (i) {
+                  final status = attendance['${i + 1}'];
+                  return DataCell(
+                    Center(
+                      child: Text(
+                        status == 'present' ? 'P' : (status == 'absent' ? 'A' : (status == 'late' ? 'L' : '-')),
+                        style: TextStyle(
+                          color: status == 'present' ? Colors.green : (status == 'absent' ? Colors.red : Colors.orange),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryTab() {
+    return Column(
+      children: [
+        _buildClassSelector(),
+        Expanded(
+          child: _isLoadingData 
+            ? const Center(child: CircularProgressIndicator())
+            : _summaryData.isEmpty 
+              ? const Center(child: Text('No summary data available'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _summaryData.length,
+                  itemBuilder: (context, index) {
+                    final s = _summaryData[index];
+                    final perc = (s['percentage'] as num?)?.toDouble() ?? 0.0;
+                    return Card(
+                      child: ListTile(
+                        title: Text(s['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('P: ${s['present']} | A: ${s['absent']} | L: ${s['late']}'),
+                        trailing: SizedBox(
+                          width: 60,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('${perc.toStringAsFixed(1)}%', style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: perc < 75 ? Colors.red : Colors.green,
+                              )),
+                              LinearProgressIndicator(
+                                value: perc / 100,
+                                backgroundColor: Colors.grey[200],
+                                color: perc < 75 ? Colors.red : Colors.green,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThresholdTab() {
+    return _isLoadingData 
+      ? const Center(child: CircularProgressIndicator())
+      : _thresholdData.isEmpty 
+        ? const Center(child: Text('All students are above 75%! 🎉'))
+        : ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _thresholdData.length,
+            itemBuilder: (context, index) {
+              final t = _thresholdData[index];
+              final perc = (t['percentage'] as num?)?.toDouble() ?? 0.0;
+              return Card(
+                color: Colors.red[50],
+                child: ListTile(
+                  leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                  title: Text(t['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                  subtitle: Text('${t['class_name']} ${t['section_name']}'),
+                  trailing: Text(
+                    '${perc.toStringAsFixed(1)}%',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 16),
+                  ),
+                ),
+              );
+            },
+          );
   }
 }

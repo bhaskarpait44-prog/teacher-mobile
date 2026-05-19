@@ -1,21 +1,63 @@
 import 'package:flutter/material.dart';
-import 'pages/login_page.dart';
+import 'package:provider/provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 import 'utils/theme.dart';
+import 'pages/login_page.dart';
+import 'pages/dashboard_page.dart';
 
-void main() {
-  runApp(const TeacherApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const EduCoreTeacherApp(),
+    ),
+  );
 }
 
-class TeacherApp extends StatelessWidget {
-  const TeacherApp({super.key});
+class EduCoreTeacherApp extends StatelessWidget {
+  const EduCoreTeacherApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'EduHard Teacher',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const LoginPage(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'EduCore Teacher',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeProvider.mode,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          home: const AuthWrapper(),
+        );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        if (authProvider.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        if (authProvider.isAuthenticated) {
+          return const DashboardPage();
+        }
+        
+        return const LoginPage();
+      },
     );
   }
 }

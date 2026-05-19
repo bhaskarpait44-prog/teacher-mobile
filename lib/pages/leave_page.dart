@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
+import '../utils/helpers.dart';
 
 class LeavePage extends StatefulWidget {
   const LeavePage({super.key});
@@ -12,10 +14,9 @@ class LeavePage extends StatefulWidget {
 }
 
 class _LeavePageState extends State<LeavePage> {
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = true;
-  List<dynamic> _leaves = [];
-  Map<String, dynamic>? _balances;
+  List<dynamic> _applications = [];
+  List<dynamic> _balances = [];
   String? _errorMessage;
 
   @override
@@ -25,43 +26,83 @@ class _LeavePageState extends State<LeavePage> {
   }
 
   Future<void> _fetchLeaveData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
       
-      // Fetch Balance
       final balanceRes = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/teacher/leave/balance'),
         headers: {'Authorization': 'Bearer $token'},
       );
       
-      // Fetch Applications
       final appsRes = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/teacher/leave/applications'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (balanceRes.statusCode == 200 && appsRes.statusCode == 200) {
-        setState(() {
-          _balances = jsonDecode(balanceRes.body)['data'];
-          _leaves = jsonDecode(appsRes.body)['data']['applications'] ?? [];
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _balances = jsonDecode(balanceRes.body)['data']['balances'] ?? [];
+            _applications = jsonDecode(appsRes.body)['data']['applications'] ?? [];
+            _isLoading = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to load leave data';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load leave data';
+          _errorMessage = 'An error occurred: $e';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'An error occurred: $e';
-        _isLoading = false;
-      });
+    }
+  }
+
+  Future<void> _cancelApplication(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Application'),
+        content: const Text('Are you sure you want to cancel this leave application?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Yes, Cancel')),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final token = authProvider.token;
+        final response = await http.patch(
+          Uri.parse('${ApiConstants.baseUrl}/teacher/leave/$id/cancel'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Application cancelled'), backgroundColor: Colors.green));
+            _fetchLeaveData();
+          }
+        }
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -69,25 +110,27 @@ class _LeavePageState extends State<LeavePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Leave Management')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _fetchLeaveData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBalanceSection(),
-                    const SizedBox(height: 24),
-                    const Text('My Applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    _buildLeaveList(),
-                  ],
-                ),
-              ),
-            ),
+      body: RefreshIndicator(
+        onRefresh: _fetchLeaveData,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? _buildErrorWidget()
+                : SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBalanceSection(),
+                        const SizedBox(height: 32),
+                        const Text('My Applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        _buildLeaveList(),
+                      ],
+                    ),
+                  ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -96,14 +139,34 @@ class _LeavePageState extends State<LeavePage> {
           ).then((_) => _fetchLeaveData());
         },
         label: const Text('Apply Leave'),
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _fetchLeaveData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBalanceSection() {
-    if (_balances == null) return const SizedBox.shrink();
-    final balances = _balances!['balances'] as List?;
+    if (_balances.isEmpty) return const SizedBox.shrink();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,32 +174,43 @@ class _LeavePageState extends State<LeavePage> {
         const Text('Leave Balance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         SizedBox(
-          height: 100,
+          height: 120,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: balances?.length ?? 0,
+            itemCount: _balances.length,
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              final b = balances![index];
+              final b = _balances[index];
+              final allowed = b['total_allowed'] ?? 0;
+              final taken = b['total_taken'] ?? 0;
+              final remaining = allowed - taken;
+              
+              Color borderColor = Colors.green;
+              if (remaining == 0) borderColor = Colors.red;
+              else if (remaining <= 5) borderColor = Colors.orange;
+
               return Container(
-                width: 120,
-                padding: const EdgeInsets.all(12),
+                width: 140,
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.05),
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
+                  border: Border.all(color: borderColor, width: 2),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '${b['total_allowed'] - b['total_taken']}',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+                      '$remaining',
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
                     Text(
                       b['leave_type'].toString().toUpperCase(),
                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 4),
+                    Text('$taken of $allowed used', style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ],
                 ),
               );
@@ -148,44 +222,78 @@ class _LeavePageState extends State<LeavePage> {
   }
 
   Widget _buildLeaveList() {
-    if (_leaves.isEmpty) {
-      return const Card(
+    if (_applications.isEmpty) {
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Center(child: Text('No leave applications found.')),
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            children: [
+              Icon(Icons.beach_access_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
+              const SizedBox(height: 12),
+              const Text('No applications found'),
+            ],
+          ),
         ),
       );
     }
 
     return Column(
-      children: _leaves.map((leave) => _buildLeaveCard(leave)).toList(),
+      children: _applications.map((leave) => _buildLeaveCard(leave)).toList(),
     );
   }
 
   Widget _buildLeaveCard(Map<String, dynamic> leave) {
-    Color statusColor;
-    switch (leave['status']) {
-      case 'approved': statusColor = Colors.green; break;
-      case 'rejected': statusColor = Colors.red; break;
-      case 'pending': statusColor = Colors.orange; break;
-      case 'cancelled': statusColor = Colors.grey; break;
-      default: statusColor = Colors.blue;
-    }
+    final status = leave['status']?.toString().toLowerCase();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        title: Text(leave['leave_type'].toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${leave['start_date']} to ${leave['end_date']}\nReason: ${leave['reason']}'),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Text(
-            leave['status'].toString().toUpperCase(),
-            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(leave['leave_type'].toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: getStatusColor(status, context).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    status?.toUpperCase() ?? 'N/A',
+                    style: TextStyle(color: getStatusColor(status, context), fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${formatDate(leave['start_date'])} to ${formatDate(leave['end_date'])}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text('Reason: ${leave['reason']}', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            if (status == 'rejected' && leave['remarks'] != null) ...[
+              const SizedBox(height: 8),
+              Text('Remarks: ${leave['remarks']}', style: TextStyle(color: colorScheme.error, fontSize: 12)),
+            ],
+            if (status == 'pending') ...[
+              const Divider(),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _cancelApplication(leave['id']),
+                  style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                  child: const Text('Cancel Application'),
+                ),
+              ),
+            ],
+          ],
         ),
-        isThreeLine: true,
       ),
     );
   }
@@ -200,21 +308,30 @@ class ApplyLeavePage extends StatefulWidget {
 
 class _ApplyLeavePageState extends State<ApplyLeavePage> {
   final _formKey = GlobalKey<FormState>();
-  final _storage = const FlutterSecureStorage();
   String _leaveType = 'casual';
   DateTime _startDate = DateTime.now().add(const Duration(days: 1));
   DateTime _endDate = DateTime.now().add(const Duration(days: 1));
-  String? _reason;
+  final _reasonController = TextEditingController();
   bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  int get _daysCount {
+    return _endDate.difference(_startDate).inDays + 1;
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
 
     setState(() => _isSaving = true);
 
     try {
-      final token = await _storage.read(key: 'token');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/teacher/leave/apply'),
         headers: {
@@ -225,23 +342,29 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
           'leave_type': _leaveType,
           'start_date': _startDate.toIso8601String().split('T')[0],
           'end_date': _endDate.toIso8601String().split('T')[0],
-          'reason': _reason,
+          'reason': _reasonController.text.trim(),
         }),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Application submitted successfully')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Application submitted successfully'), backgroundColor: Colors.green),
+          );
           Navigator.pop(context);
         }
       } else {
         final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to apply')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to apply')));
+          setState(() => _isSaving = false);
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -250,10 +373,11 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Apply for Leave')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
                 value: _leaveType,
@@ -266,11 +390,12 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                 ],
                 onChanged: (val) => setState(() => _leaveType = val!),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               ListTile(
-                title: const Text('Start Date'),
-                subtitle: Text(_startDate.toIso8601String().split('T')[0]),
-                trailing: const Icon(Icons.calendar_today),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Start Date', style: TextStyle(fontSize: 12)),
+                subtitle: Text(formatDate(_startDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                trailing: const Icon(Icons.calendar_today_rounded),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -278,13 +403,20 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
-                  if (picked != null) setState(() => _startDate = picked);
+                  if (picked != null) {
+                    setState(() {
+                      _startDate = picked;
+                      if (_endDate.isBefore(_startDate)) _endDate = _startDate;
+                    });
+                  }
                 },
               ),
+              const Divider(),
               ListTile(
-                title: const Text('End Date'),
-                subtitle: Text(_endDate.toIso8601String().split('T')[0]),
-                trailing: const Icon(Icons.calendar_today),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('End Date', style: TextStyle(fontSize: 12)),
+                subtitle: Text(formatDate(_endDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                trailing: const Icon(Icons.calendar_today_rounded),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -295,17 +427,29 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   if (picked != null) setState(() => _endDate = picked);
                 },
               ),
-              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  'Total Days: $_daysCount',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                ),
+              ),
+              const SizedBox(height: 24),
               TextFormField(
+                controller: _reasonController,
                 decoration: const InputDecoration(labelText: 'Reason', alignLabelWithHint: true),
                 maxLines: 3,
-                validator: (val) => val == null || val.isEmpty ? 'Please enter a reason' : null,
-                onSaved: (val) => _reason = val,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Please enter a reason';
+                  if (val.length < 10) return 'Reason must be at least 10 characters';
+                  return null;
+                },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: _isSaving ? null : _submit,
-                child: _isSaving ? const CircularProgressIndicator() : const Text('Submit Application'),
+                child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Application'),
               ),
             ],
           ),
