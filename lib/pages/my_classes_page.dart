@@ -44,7 +44,9 @@ class _MyClassesPageState extends State<MyClassesPage> {
         final data = jsonDecode(response.body);
         if (!mounted) return;
         setState(() {
-          _classes = data['data']['classes'] ?? [];
+          final myClass = data['data']['my_class'] ?? [];
+          final subjectClasses = data['data']['subject_classes'] ?? [];
+          _classes = [...myClass, ...subjectClasses];
           _isLoading = false;
         });
       } else {

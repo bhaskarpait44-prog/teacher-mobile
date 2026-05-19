@@ -236,10 +236,55 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(Icons.dashboard_rounded, 'Dashboard', true, () => Navigator.pop(context)),
-                _buildDrawerItem(Icons.class_rounded, 'My Classes', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => MyClassesPage()));
-                }),
+                ExpansionTile(
+                  leading: Icon(Icons.class_rounded, color: colorScheme.onSurfaceVariant),
+                  title: Text(
+                    'My Classes',
+                    style: TextStyle(color: colorScheme.onSurface),
+                  ),
+                  children: [
+                    ListTile(
+                      dense: true,
+                      title: const Text('View All Classes', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
+                      },
+                    ),
+                    if (_dashboardData != null) ...[
+                      ...(_dashboardData!['my_class'] as List? ?? []).map((c) => ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.star_border_rounded, size: 20),
+                        title: Text('${c['class_name']} ${c['section_name']}'),
+                        subtitle: const Text('Class Teacher', style: TextStyle(fontSize: 10)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => ClassOverviewPage(
+                            classId: c['class_id'],
+                            sectionId: c['section_id'],
+                            className: c['class_name'],
+                            sectionName: c['section_name'],
+                          )));
+                        },
+                      )),
+                      ...(_dashboardData!['subject_classes'] as List? ?? []).map((c) => ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.book_outlined, size: 20),
+                        title: Text('${c['class_name']} ${c['section_name']}'),
+                        subtitle: Text(c['subject_name'] ?? 'Subject', style: const TextStyle(fontSize: 10)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => ClassOverviewPage(
+                            classId: c['class_id'],
+                            sectionId: c['section_id'],
+                            className: c['class_name'],
+                            sectionName: c['section_name'],
+                          )));
+                        },
+                      )),
+                    ],
+                  ],
+                ),
                 _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => AttendancePage()));
