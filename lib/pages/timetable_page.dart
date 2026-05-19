@@ -197,14 +197,11 @@ class _TimetablePageState extends State<TimetablePage> {
       itemCount: periods.length,
       itemBuilder: (context, index) {
         final period = periods[index];
-        final isCurrent = _currentPeriod != null &&
-            _currentPeriod!['period_name'] == period['period_name'] &&
-            day.toLowerCase() == DateTime.now().weekdayName;
-            
-        // Note: weekdayName is not standard, let's use a helper or check by index
         final todayIndex = DateTime.now().weekday - 1;
         final isToday = _days.indexOf(day) == todayIndex;
-        final bool currentHighlight = isCurrent && isToday;
+        final bool currentHighlight = _currentPeriod != null &&
+            _currentPeriod!['period_name'] == period['period_name'] &&
+            isToday;
 
         final colorScheme = Theme.of(context).colorScheme;
 
@@ -299,6 +296,4 @@ class _TimetablePageState extends State<TimetablePage> {
   }
 }
 
-extension on DateTime {
-  String get weekdayName => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][weekday - 1];
-}
+

@@ -34,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Correction Request
   String? _correctionField;
+  final _currentValueController = TextEditingController();
   final _requestedValueController = TextEditingController();
   final _reasonController = TextEditingController();
 
@@ -51,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _currentPassController.dispose();
     _newPassController.dispose();
     _confirmPassController.dispose();
+    _currentValueController.dispose();
     _requestedValueController.dispose();
     _reasonController.dispose();
     super.dispose();
@@ -472,11 +474,17 @@ class _ProfilePageState extends State<ProfilePage> {
             DropdownMenuItem(value: 'dob', child: Text('Date of Birth')),
             DropdownMenuItem(value: 'gender', child: Text('Gender')),
           ],
-          onChanged: (val) => setState(() => _correctionField = val),
+          onChanged: (val) => setState(() {
+            _correctionField = val;
+            if (val == 'name') _currentValueController.text = _profile?['name'] ?? 'N/A';
+            else if (val == 'employee_id') _currentValueController.text = _profile?['employee_id'] ?? 'N/A';
+            else if (val == 'dob') _currentValueController.text = _profile?['dob'] ?? 'N/A';
+            else if (val == 'gender') _currentValueController.text = _profile?['gender'] ?? 'N/A';
+          }),
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: TextEditingController(text: currentValue),
+          controller: _currentValueController,
           readOnly: true,
           decoration: InputDecoration(
             labelText: 'Current Value',

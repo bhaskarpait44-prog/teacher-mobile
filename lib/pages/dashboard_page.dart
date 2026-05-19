@@ -61,7 +61,7 @@ class _DashboardPageState extends State<DashboardPage> {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            _dashboardData = data;
+            _dashboardData = data['data'];
             _isLoading = false;
           });
         }
@@ -487,7 +487,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     builder: (context) => ClassOverviewPage(
                       classId: item['class_id'],
                       sectionId: item['section_id'],
-                      className: '${item['class_name']} ${item['section_name']}',
+                      className: item['class_name'],
+                      sectionName: item['section_name'],
                     ),
                   ),
                 );

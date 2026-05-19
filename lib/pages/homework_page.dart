@@ -309,7 +309,8 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   bool _isLoading = true;
   List<dynamic> _classes = [];
   List<dynamic> _subjects = [];
-  
+  bool _isSubjectsLoading = false;
+
   int? _selectedClassId;
   int? _selectedSectionId;
   int? _selectedSubjectId;
@@ -368,20 +369,102 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
     }
   }
 
+  Future<void> _fetchSubjects() async {
+    if (_selectedClassId == null || _selectedSectionId == null) return;
+
+    setState(() => _isSubjectsLoading = true);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+
+      // Step 1: Try to fetch from marks/exams
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/marks/exams'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List exams = data['data']['exams'] ?? [];
+        final List<Map<String, dynamic>> foundSubjects = [];
+        final Set<int> subjectIds = {};
+
+        for (var exam in exams) {
+          final List subjects = exam['subjects'] ?? [];
+          for (var s in subjects) {
+            if (s['class_id'] == _selectedClassId && s['section_id'] == _selectedSectionId) {
+              if (!subjectIds.contains(s['subject_id'])) {
+                subjectIds.add(s['subject_id']);
+                foundSubjects.add({
+                  'id': s['subject_id'],
+                  'name': s['subject_name'],
+                });
+              }
+            }
+          }
+        }
+
+        if (foundSubjects.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _subjects = foundSubjects;
+              _isSubjectsLoading = false;
+            });
+            return;
+          }
+        }
+      }
+
+      // Step 2: Fallback to timetable if no exams or subjects found
+      final timetableRes = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/timetable'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (timetableRes.statusCode == 200) {
+        final data = jsonDecode(timetableRes.body);
+        final Map<String, dynamic> timetable = data['data']['timetable'] ?? {};
+        final List<Map<String, dynamic>> foundSubjects = [];
+        final Set<String> subjectNames = {};
+
+        timetable.forEach((day, periods) {
+          for (var p in (periods as List)) {
+            if (p['class_id'] == _selectedClassId && p['section_id'] == _selectedSectionId) {
+              if (!subjectNames.contains(p['subject_name'])) {
+                subjectNames.add(p['subject_name']);
+                foundSubjects.add({
+                  'id': p['subject_id'] ?? subjectNames.length, // use subject_id if exists
+                  'name': p['subject_name'],
+                });
+              }
+            }
+          }
+        });
+
+        if (mounted) {
+          setState(() {
+            _subjects = foundSubjects;
+            _isSubjectsLoading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isSubjectsLoading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isSubjectsLoading = false);
+    }
+  }
+
   void _onClassChanged(String? val, {bool fetchOnly = false}) {
     if (val == null) return;
     final parts = val.split('-');
     setState(() {
       _selectedClassId = int.parse(parts[0]);
       _selectedSectionId = int.parse(parts[1]);
-      // Mock subjects for this class
-      _subjects = [
-        {'id': 1, 'name': 'Mathematics'},
-        {'id': 2, 'name': 'English'},
-        {'id': 3, 'name': 'Science'},
-      ];
       if (!fetchOnly) _selectedSubjectId = null;
+      _subjects = [];
     });
+    _fetchSubjects();
   }
 
   Future<void> _submit() async {
@@ -467,12 +550,17 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(labelText: 'Subject'),
+                      decoration: InputDecoration(
+                        labelText: 'Subject',
+                        suffixIcon: _isSubjectsLoading 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : null,
+                      ),
                       value: _selectedSubjectId,
                       items: _subjects.map((s) {
                         return DropdownMenuItem<int>(value: s['id'], child: Text(s['name']));
                       }).toList(),
-                      onChanged: (val) => setState(() => _selectedSubjectId = val),
+                      onChanged: _isSubjectsLoading ? null : (val) => setState(() => _selectedSubjectId = val),
                       validator: (v) => v == null ? 'Required' : null,
                     ),
                     const SizedBox(height: 16),
@@ -577,11 +665,11 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            _submissions = data['data'] ?? [];
+            _submissions = data['data']['submissions'] ?? [];
             for (var sub in _submissions) {
               final id = sub['enrollment_id'];
-              _marksControllers[id] = TextEditingController(text: sub['marks']?.toString() ?? '');
-              _feedbackControllers[id] = TextEditingController(text: sub['feedback'] ?? '');
+              _marksControllers[id] = TextEditingController(text: sub['marks_obtained']?.toString() ?? '');
+              _feedbackControllers[id] = TextEditingController(text: sub['teacher_comment'] ?? '');
             }
             _isLoading = false;
           });
@@ -658,7 +746,7 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('${sub['student_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        Text('${sub['first_name']} ${sub['last_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                         _buildStatusBadge(sub['status']),
                                       ],
                                     ),

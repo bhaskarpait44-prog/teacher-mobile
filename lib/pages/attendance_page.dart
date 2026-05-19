@@ -563,8 +563,13 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
           });
         }
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoadingClasses = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load classes: $e'), backgroundColor: Colors.red),
+        );
+        setState(() => _isLoadingClasses = false);
+      }
     }
   }
 
@@ -589,7 +594,13 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
         final data = jsonDecode(response.body);
         if (mounted) setState(() => _registerData = data['data'] ?? []);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load register: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
     if (mounted) setState(() => _isLoadingData = false);
   }
 
@@ -606,7 +617,13 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
         final data = jsonDecode(response.body);
         if (mounted) setState(() => _summaryData = data['data'] ?? []);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load summary: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
     if (mounted) setState(() => _isLoadingData = false);
   }
 
@@ -622,7 +639,13 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
         final data = jsonDecode(response.body);
         if (mounted) setState(() => _thresholdData = data['data'] ?? []);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load threshold data: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
     if (mounted) setState(() => _isLoadingData = false);
   }
 

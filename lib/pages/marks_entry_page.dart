@@ -289,10 +289,9 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
         'marks': double.parse(_controllers[s['enrollment_id']]!.text),
       }).toList();
 
-      final endpoint = isFinalSubmit ? '/teacher/marks/submit' : '/teacher/marks/bulk-save';
-      
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+      // Step 1: Always bulk-save marks first
+      final saveRes = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/marks/bulk-save'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -302,25 +301,55 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
           'subject_id': widget.subjectId,
           'class_id': widget.classId,
           'section_id': widget.sectionId,
-          if (!isFinalSubmit) 'marks_data': marksData,
+          'marks_data': marksData,
         }),
       );
 
-      if (response.statusCode == 200) {
+      if (saveRes.statusCode != 200) {
+        final data = jsonDecode(saveRes.body);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to save marks')));
+          setState(() => _isSaving = false);
+        }
+        return;
+      }
+
+      if (!isFinalSubmit) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isFinalSubmit ? 'Marks submitted successfully' : 'Marks saved as draft'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Marks saved as draft'), backgroundColor: Colors.green),
           );
-          if (isFinalSubmit) {
-            Navigator.pop(context);
-          } else {
-            setState(() => _isSaving = false);
-          }
+          setState(() => _isSaving = false);
+        }
+        return;
+      }
+
+      // Step 2: If final submit, call submit endpoint
+      final submitRes = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/teacher/marks/submit'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'exam_id': widget.examId,
+          'subject_id': widget.subjectId,
+          'class_id': widget.classId,
+          'section_id': widget.sectionId,
+        }),
+      );
+
+      if (submitRes.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Marks submitted successfully'), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context);
         }
       } else {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(submitRes.body);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Action failed')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to submit marks')));
           setState(() => _isSaving = false);
         }
       }

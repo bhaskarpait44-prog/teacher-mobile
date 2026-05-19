@@ -122,7 +122,8 @@ class _MyClassesPageState extends State<MyClassesPage> {
                   builder: (context) => ClassOverviewPage(
                     classId: item['class_id'],
                     sectionId: item['section_id'],
-                    className: '${item['class_name']} ${item['section_name']}',
+                    className: item['class_name'],
+                    sectionName: item['section_name'],
                   ),
                 ),
               );
@@ -162,12 +163,14 @@ class ClassOverviewPage extends StatefulWidget {
   final int classId;
   final int sectionId;
   final String className;
+  final String sectionName;
 
   const ClassOverviewPage({
     super.key,
     required this.classId,
     required this.sectionId,
     required this.className,
+    required this.sectionName,
   });
 
   @override
@@ -281,7 +284,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.className),
+        title: Text('${widget.className} ${widget.sectionName}'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -395,8 +398,8 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
                   builder: (context) => MarkAttendancePage(
                     classId: widget.classId,
                     sectionId: widget.sectionId,
-                    className: widget.className.split(' ')[0],
-                    sectionName: widget.className.split(' ').length > 1 ? widget.className.split(' ')[1] : '',
+                    className: widget.className,
+                    sectionName: widget.sectionName,
                   ),
                 ),
               ).then((_) => _fetchData());
