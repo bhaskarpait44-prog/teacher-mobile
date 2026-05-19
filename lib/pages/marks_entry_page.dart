@@ -256,10 +256,23 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
     // Validate marks
     for (var student in _students) {
       final id = student['enrollment_id'];
-      final val = double.tryParse(_controllers[id]!.text);
+      final text = _controllers[id]!.text.trim();
+      if (text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+            'Please enter marks for ${student['first_name']}. '
+            'Enter 0 if absent.'
+          )),
+        );
+        return;
+      }
+      final val = double.tryParse(text);
       if (val == null || val < 0 || val > _maxMarks) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid marks for ${student['first_name']}. Must be between 0 and $_maxMarks.')),
+          SnackBar(content: Text(
+            'Invalid marks for ${student['first_name']}. '
+            'Must be between 0 and $_maxMarks.'
+          )),
         );
         return;
       }

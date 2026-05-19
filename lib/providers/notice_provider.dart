@@ -7,13 +7,16 @@ class NoticeProvider with ChangeNotifier {
   List<dynamic> _notices = [];
   bool _isLoading = false;
   int _unreadCount = 0;
+  String? _error;
 
   List<dynamic> get notices => _notices;
   bool get isLoading => _isLoading;
   int get unreadCount => _unreadCount;
+  String? get error => _error;
 
   Future<void> fetchNotices(String token) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
@@ -31,6 +34,7 @@ class NoticeProvider with ChangeNotifier {
         _unreadCount = _notices.where((n) => n['is_read'] == false).length;
       }
     } catch (e) {
+      _error = 'Failed to load notices. Please try again.';
       debugPrint('Error fetching notices: $e');
     } finally {
       _isLoading = false;

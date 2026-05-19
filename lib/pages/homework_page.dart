@@ -310,6 +310,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = true;
   List<dynamic> _classes = [];
+  String? _classesError;
   List<dynamic> _subjects = [];
   bool _isSubjectsLoading = false;
 
@@ -346,6 +347,10 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   }
 
   Future<void> _fetchClasses() async {
+    setState(() {
+      _isLoading = true;
+      _classesError = null;
+    });
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
@@ -359,15 +364,26 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
           setState(() {
             _classes = data['data']['classes'] ?? [];
             if (_isEditing) {
-               // Load subjects for the existing class
                _onClassChanged('${_selectedClassId}-${_selectedSectionId}', fetchOnly: true);
             }
             _isLoading = false;
           });
         }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _classesError = 'Failed to load classes. Tap to retry.';
+          });
+        }
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _classesError = 'Failed to load classes. Tap to retry.';
+        });
+      }
     }
   }
 
@@ -533,7 +549,27 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
       body: SafeArea(
         child: _isLoading && _classes.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+            : (!_isLoading && _classes.isEmpty && _classesError != null)
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, 
+                               color: Theme.of(context).colorScheme.error),
+                          const SizedBox(height: 16),
+                          Text(_classesError!),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetchClasses,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Form(
                   key: _formKey,

@@ -210,31 +210,26 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
+      final headers = {'Authorization': 'Bearer $token'};
+      final baseUrl = ApiConstants.baseUrl;
 
-      // Fetch students
-      final studentsRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/students?class_id=${widget.classId}&section_id=${widget.sectionId}'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      // Run all 3 in parallel
+      final results = await Future.wait([
+        http.get(Uri.parse('$baseUrl/teacher/students?class_id=${widget.classId}&section_id=${widget.sectionId}'), headers: headers),
+        http.get(Uri.parse('$baseUrl/teacher/attendance/status'), headers: headers),
+        http.get(Uri.parse('$baseUrl/teacher/marks/exams'), headers: headers),
+      ]);
 
-      // Fetch attendance summary
-      final attendanceRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/attendance/status'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      if (!mounted) return;
 
-      // Fetch subjects (from exams endpoint)
-      final subjectsRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/marks/exams'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      
+      final studentsRes = results[0];
+      final attendanceRes = results[1];
+      final subjectsRes = results[2];
+
       if (studentsRes.statusCode == 200) {
         final studentsData = jsonDecode(studentsRes.body);
         final attendanceData = jsonDecode(attendanceRes.body);
         final subjectsData = jsonDecode(subjectsRes.body);
-
-        if (!mounted) return;
 
         // Find attendance for this class
         final List classes = attendanceData['data']['classes'] ?? [];
@@ -267,7 +262,6 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
           _isLoading = false;
         });
       } else {
-        if (!mounted) return;
         setState(() {
           _errorMessage = 'Failed to load class data';
           _isLoading = false;
@@ -431,10 +425,6 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
             leading: const CircleAvatar(child: Icon(Icons.book_outlined)),
             title: Text(s['subject_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: const Text('Regular Subject'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-               // Detail view for subject?
-            },
           ),
         );
       },
