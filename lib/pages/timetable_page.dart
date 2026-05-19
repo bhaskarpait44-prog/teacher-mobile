@@ -209,9 +209,9 @@ class _TimetablePageState extends State<TimetablePage> {
         final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
-          decoration: BoxDecoration(
-            border: currentHighlight ? Border.all(color: colorScheme.primary, width: 2) : null,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: currentHighlight ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide.none,
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),

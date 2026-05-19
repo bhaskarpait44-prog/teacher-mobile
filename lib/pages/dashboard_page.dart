@@ -13,6 +13,7 @@ import 'marks_entry_page.dart';
 import 'leave_page.dart';
 import 'my_classes_page.dart';
 import 'login_page.dart';
+import 'profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -175,31 +176,31 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildDrawerItem(Icons.dashboard_rounded, 'Dashboard', true, () => Navigator.pop(context)),
                 _buildDrawerItem(Icons.class_rounded, 'My Classes', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => MyClassesPage())),
                 }),
                 _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendancePage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => AttendancePage()));
                 }),
                 _buildDrawerItem(Icons.book_rounded, 'Homework', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeworkPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomeworkPage()));
                 }),
                 _buildDrawerItem(Icons.event_note_rounded, 'Timetable', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TimetablePage()));
                 }),
                 _buildDrawerItem(Icons.assignment_rounded, 'Marks Entry', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MarksEntryPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => MarksEntryPage()));
                 }),
                 _buildDrawerItem(Icons.beach_access_rounded, 'Leaves', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const LeavePage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LeavePage()));
                 }),
                 _buildDrawerItem(Icons.person_outline_rounded, 'Profile', false, () {
                    Navigator.pop(context);
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+                   Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
                 }),
                 const Divider(),
                 _buildDrawerItem(Icons.logout_rounded, 'Logout', false, _handleLogout),
