@@ -35,6 +35,9 @@ class NotificationService {
       'High Importance Notifications',
       description: 'This channel is used for important notifications.',
       importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
     );
 
     await _localNotifications
@@ -58,6 +61,9 @@ class NotificationService {
       'High Importance Notifications',
       importance: Importance.max,
       priority: Priority.high,
+      visibility: NotificationVisibility.public,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.status,
     );
     const NotificationDetails details = NotificationDetails(android: androidDetails);
 
