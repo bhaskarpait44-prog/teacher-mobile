@@ -4,8 +4,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../utils/notification_service.dart';
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
@@ -14,6 +16,7 @@ import 'leave_page.dart';
 import 'my_classes_page.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'notice_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -31,6 +34,26 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _fetchDashboardData();
+    _fetchNotices();
+    _registerPushToken();
+  }
+
+  void _registerPushToken() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.token != null) {
+        NotificationService.registerToken(authProvider.token!);
+      }
+    });
+  }
+
+  void _fetchNotices() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.token != null) {
+        Provider.of<NoticeProvider>(context, listen: false).fetchNotices(authProvider.token!);
+      }
+    });
   }
 
   Future<void> _fetchDashboardData() async {
@@ -105,6 +128,43 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          Consumer<NoticeProvider>(
+            builder: (context, noticeProvider, _) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NoticePage())),
+                  ),
+                  if (noticeProvider.unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${noticeProvider.unreadCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: Icon(themeProvider.mode == ThemeMode.light 
               ? Icons.dark_mode_outlined 
@@ -183,6 +243,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => AttendancePage()));
+                }),
+                _buildDrawerItem(Icons.notifications_none_rounded, 'Notices', false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NoticePage()));
                 }),
                 _buildDrawerItem(Icons.book_rounded, 'Homework', false, () {
                   Navigator.pop(context);

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "986152435390",
+    "project_id": "eduhard-9c6c3",
+    "storage_bucket": "eduhard-9c6c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986152435390:android:ca45b2279deb19844528ef",
+        "android_client_info": {
+          "package_name": "com.example.teacher_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHP1IEXY7LRrp2wx_HcTtClqi-ODoON0k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
