@@ -176,7 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildDrawerItem(Icons.dashboard_rounded, 'Dashboard', true, () => Navigator.pop(context)),
                 _buildDrawerItem(Icons.class_rounded, 'My Classes', false, () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => MyClassesPage())),
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => MyClassesPage()));
                 }),
                 _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
                   Navigator.pop(context);
