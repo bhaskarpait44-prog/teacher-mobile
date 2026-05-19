@@ -42,8 +42,27 @@ class _MarksEntryPageState extends State<MarksEntryPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
+          final rawExams = data['data']['exams'] as List? ?? [];
+          final Map<String, Map<String, dynamic>> grouped = {};
+          
+          for (var slot in rawExams) {
+            final examName = slot['name'] ?? 'Exam';
+            final examId = slot['id'];
+            final key = '${examId}_$examName';
+            
+            if (!grouped.containsKey(key)) {
+              grouped[key] = {
+                'exam_id': examId,
+                'exam_name': examName,
+                'term_name': slot['term_name'],
+                'subjects': [],
+              };
+            }
+            grouped[key]!['subjects'].add(slot);
+          }
+
           setState(() {
-            _exams = data['data']['exams'] ?? [];
+            _exams = grouped.values.toList();
             _isLoading = false;
           });
         }

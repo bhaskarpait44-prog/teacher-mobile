@@ -50,8 +50,21 @@ class _TimetablePageState extends State<TimetablePage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
+          final rawTimetable = data['data']['timetable'];
+          Map<String, List<dynamic>> grouped = {};
+          
+          if (rawTimetable is List) {
+            for (var slot in rawTimetable) {
+              final day = slot['day_of_week'].toString().toLowerCase();
+              if (!grouped.containsKey(day)) grouped[day] = [];
+              grouped[day]!.add(slot);
+            }
+          } else if (rawTimetable is Map) {
+            grouped = Map<String, List<dynamic>>.from(rawTimetable);
+          }
+
           setState(() {
-            _timetable = Map<String, List<dynamic>>.from(data['data']['timetable'] ?? {});
+            _timetable = grouped;
             _isLoading = false;
           });
         }
