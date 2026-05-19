@@ -69,13 +69,15 @@ class _MarksEntryPageState extends State<MarksEntryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Marks Entry')),
-      body: RefreshIndicator(
-        onRefresh: _fetchExams,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : _buildExamList(),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchExams,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : _buildExamList(),
+        ),
       ),
     );
   }
@@ -366,59 +368,61 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
     final isSubmitted = widget.entryStatus == 'submitted';
     return Scaffold(
       appBar: AppBar(title: Text('${widget.subjectName} (${_maxMarks})')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _students.length,
-                    separatorBuilder: (context, index) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final student = _students[index];
-                      final id = student['enrollment_id'];
-                      return ListTile(
-                        leading: CircleAvatar(child: Text(student['first_name'][0])),
-                        title: Text('${student['first_name']} ${student['last_name']}'),
-                        subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
-                        trailing: SizedBox(
-                          width: 80,
-                          child: TextField(
-                            controller: _controllers[id],
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            enabled: !isSubmitted,
-                            decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _students.length,
+                      separatorBuilder: (context, index) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final student = _students[index];
+                        final id = student['enrollment_id'];
+                        return ListTile(
+                          leading: CircleAvatar(child: Text(student['first_name'][0])),
+                          title: Text('${student['first_name']} ${student['last_name']}'),
+                          subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
+                          trailing: SizedBox(
+                            width: 80,
+                            child: TextField(
+                              controller: _controllers[id],
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              enabled: !isSubmitted,
+                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                if (!isSubmitted)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        ElevatedButton(
-                          onPressed: _isSaving ? null : () => _saveMarks(false),
-                          child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Save All Marks (Draft)'),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: _isSaving ? null : () => _saveMarks(true),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Theme.of(context).colorScheme.primary),
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
-                          child: const Text('Submit for Review'),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
-              ],
-            ),
+                  if (!isSubmitted)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: _isSaving ? null : () => _saveMarks(false),
+                            child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Save All Marks (Draft)'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: _isSaving ? null : () => _saveMarks(true),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                            child: const Text('Submit for Review'),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+      ),
     );
   }
 }

@@ -228,31 +228,33 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? _buildErrorWidget()
-              : RefreshIndicator(
-                  onRefresh: _fetchProfile,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        _buildProfileHeader(),
-                        const SizedBox(height: 32),
-                        _buildContactInfo(),
-                        const SizedBox(height: 32),
-                        _buildAccountInfo(),
-                        const SizedBox(height: 32),
-                        _buildChangePassword(),
-                        const SizedBox(height: 32),
-                        _buildCorrectionRequest(),
-                        const SizedBox(height: 40),
-                      ],
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? _buildErrorWidget()
+                : RefreshIndicator(
+                    onRefresh: _fetchProfile,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          _buildProfileHeader(),
+                          const SizedBox(height: 32),
+                          _buildContactInfo(),
+                          const SizedBox(height: 32),
+                          _buildAccountInfo(),
+                          const SizedBox(height: 32),
+                          _buildChangePassword(),
+                          const SizedBox(height: 32),
+                          _buildCorrectionRequest(),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+      ),
     );
   }
 

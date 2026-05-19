@@ -67,13 +67,15 @@ class _MyClassesPageState extends State<MyClassesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Classes')),
-      body: RefreshIndicator(
-        onRefresh: _fetchClasses,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : _buildClassGrid(),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchClasses,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : _buildClassGrid(),
+        ),
       ),
     );
   }
@@ -294,13 +296,15 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildStudentsTab(),
-          _buildAttendanceTab(),
-          _buildSubjectsTab(),
-        ],
+      body: SafeArea(
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildStudentsTab(),
+            _buildAttendanceTab(),
+            _buildSubjectsTab(),
+          ],
+        ),
       ),
     );
   }
@@ -316,10 +320,11 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final student = _students[index];
+        final firstName = student['first_name'] ?? '';
         final name = '${student['first_name']} ${student['last_name']}';
         return ListTile(
           leading: CircleAvatar(
-            child: Text(student['first_name'][0]),
+            child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
           ),
           title: Text(name),
           subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
@@ -344,8 +349,8 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
     if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_attendanceSummary == null) return const Center(child: Text('No attendance data for today'));
 
-    final total = _attendanceSummary!['total_students'] ?? 0;
-    final marked = _attendanceSummary!['marked_students'] ?? 0;
+    final total = int.tryParse(_attendanceSummary!['total_students']?.toString() ?? '0') ?? 0;
+    final marked = int.tryParse(_attendanceSummary!['marked_students']?.toString() ?? '0') ?? 0;
     final isComplete = marked >= total && total > 0;
 
     return Padding(
@@ -543,24 +548,26 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(child: Text(_errorMessage!))
-              : Column(
-                  children: [
-                    _buildProfileCard(),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildAttendanceList(),
-                          _buildResultsList(),
-                        ],
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? Center(child: Text(_errorMessage!))
+                : Column(
+                    children: [
+                      _buildProfileCard(),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildAttendanceList(),
+                            _buildResultsList(),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+      ),
     );
   }
 

@@ -110,26 +110,28 @@ class _LeavePageState extends State<LeavePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Leave Management')),
-      body: RefreshIndicator(
-        onRefresh: _fetchLeaveData,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildBalanceSection(),
-                        const SizedBox(height: 32),
-                        const Text('My Applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        _buildLeaveList(),
-                      ],
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchLeaveData,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildBalanceSection(),
+                          const SizedBox(height: 32),
+                          const Text('My Applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          _buildLeaveList(),
+                        ],
+                      ),
                     ),
-                  ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -372,86 +374,88 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Apply for Leave')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<String>(
-                value: _leaveType,
-                decoration: const InputDecoration(labelText: 'Leave Type'),
-                items: const [
-                  DropdownMenuItem(value: 'casual', child: Text('Casual Leave')),
-                  DropdownMenuItem(value: 'sick', child: Text('Sick Leave')),
-                  DropdownMenuItem(value: 'earned', child: Text('Earned Leave')),
-                  DropdownMenuItem(value: 'emergency', child: Text('Emergency Leave')),
-                ],
-                onChanged: (val) => setState(() => _leaveType = val!),
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Start Date', style: TextStyle(fontSize: 12)),
-                subtitle: Text(formatDate(_startDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.calendar_today_rounded),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _startDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _startDate = picked;
-                      if (_endDate.isBefore(_startDate)) _endDate = _startDate;
-                    });
-                  }
-                },
-              ),
-              const Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('End Date', style: TextStyle(fontSize: 12)),
-                subtitle: Text(formatDate(_endDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.calendar_today_rounded),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _endDate,
-                    firstDate: _startDate,
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) setState(() => _endDate = picked);
-                },
-              ),
-              const Divider(),
-              const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  'Total Days: $_daysCount',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _leaveType,
+                  decoration: const InputDecoration(labelText: 'Leave Type'),
+                  items: const [
+                    DropdownMenuItem(value: 'casual', child: Text('Casual Leave')),
+                    DropdownMenuItem(value: 'sick', child: Text('Sick Leave')),
+                    DropdownMenuItem(value: 'earned', child: Text('Earned Leave')),
+                    DropdownMenuItem(value: 'emergency', child: Text('Emergency Leave')),
+                  ],
+                  onChanged: (val) => setState(() => _leaveType = val!),
                 ),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _reasonController,
-                decoration: const InputDecoration(labelText: 'Reason', alignLabelWithHint: true),
-                maxLines: 3,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Please enter a reason';
-                  if (val.length < 10) return 'Reason must be at least 10 characters';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _isSaving ? null : _submit,
-                child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Application'),
-              ),
-            ],
+                const SizedBox(height: 24),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Start Date', style: TextStyle(fontSize: 12)),
+                  subtitle: Text(formatDate(_startDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  trailing: const Icon(Icons.calendar_today_rounded),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _startDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _startDate = picked;
+                        if (_endDate.isBefore(_startDate)) _endDate = _startDate;
+                      });
+                    }
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('End Date', style: TextStyle(fontSize: 12)),
+                  subtitle: Text(formatDate(_endDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  trailing: const Icon(Icons.calendar_today_rounded),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _endDate,
+                      firstDate: _startDate,
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) setState(() => _endDate = picked);
+                  },
+                ),
+                const Divider(),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'Total Days: $_daysCount',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _reasonController,
+                  decoration: const InputDecoration(labelText: 'Reason', alignLabelWithHint: true),
+                  maxLines: 3,
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'Please enter a reason';
+                    if (val.length < 10) return 'Reason must be at least 10 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed: _isSaving ? null : _submit,
+                  child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Application'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -107,16 +107,18 @@ class _TimetablePageState extends State<TimetablePage> {
             ],
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : TabBarView(
-                    children: [
-                      _buildWeeklyTab(),
-                      _buildExamsTab(),
-                    ],
-                  ),
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : TabBarView(
+                      children: [
+                        _buildWeeklyTab(),
+                        _buildExamsTab(),
+                      ],
+                    ),
+        ),
       ),
     );
   }

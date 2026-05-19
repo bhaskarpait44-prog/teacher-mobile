@@ -115,11 +115,13 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       drawer: _buildDrawer(context),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? _buildErrorWidget()
-              : _buildDashboardContent(),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? _buildErrorWidget()
+                : _buildDashboardContent(),
+      ),
     );
   }
 

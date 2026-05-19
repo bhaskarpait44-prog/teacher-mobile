@@ -85,13 +85,15 @@ class _AttendancePageState extends State<AttendancePage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchAttendanceStatus,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : _buildClassList(),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchAttendanceStatus,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : _buildClassList(),
+        ),
       ),
     );
   }
@@ -122,8 +124,8 @@ class _AttendancePageState extends State<AttendancePage> {
       itemCount: _classes.length,
       itemBuilder: (context, index) {
         final item = _classes[index];
-        final total = item['total_students'] ?? 0;
-        final marked = item['marked_students'] ?? 0;
+        final total = int.tryParse(item['total_students']?.toString() ?? '0') ?? 0;
+        final marked = int.tryParse(item['marked_students']?.toString() ?? '0') ?? 0;
         final bool isFullyMarked = marked >= total && total > 0;
         final colorScheme = Theme.of(context).colorScheme;
 
@@ -351,60 +353,63 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildHeader(),
-                if (_isHoliday)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    color: colorScheme.surfaceVariant,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        Text('Holiday: $_holidayName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                      ],
-                    ),
-                  ),
-                if (_requiresReason)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: TextField(
-                      controller: _reasonController,
-                      decoration: const InputDecoration(
-                        labelText: 'Reason for marking/editing',
-                        prefixIcon: Icon(Icons.comment_rounded),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _buildHeader(),
+                  if (_isHoliday)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      color: colorScheme.surfaceVariant,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text('Holiday: $_holidayName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                        ],
                       ),
                     ),
-                  ),
-                Expanded(
-                  child: _errorMessage != null
-                      ? Center(child: Text(_errorMessage!))
-                      : ListView.separated(
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemCount: _students.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final student = _students[index];
-                            final enrollmentId = student['enrollment_id'];
-                            final status = _attendance[enrollmentId];
-
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Text(student['first_name'][0]),
-                              ),
-                              title: Text('${student['first_name']} ${student['last_name']}'),
-                              subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
-                              trailing: _buildStatusChip(enrollmentId, status),
-                            );
-                          },
+                  if (_requiresReason)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: TextField(
+                        controller: _reasonController,
+                        decoration: const InputDecoration(
+                          labelText: 'Reason for marking/editing',
+                          prefixIcon: Icon(Icons.comment_rounded),
                         ),
-                ),
-              ],
-            ),
+                      ),
+                    ),
+                  Expanded(
+                    child: _errorMessage != null
+                        ? Center(child: Text(_errorMessage!))
+                        : ListView.separated(
+                            padding: const EdgeInsets.only(bottom: 100),
+                            itemCount: _students.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final student = _students[index];
+                              final firstName = student['first_name'] ?? '';
+                              final enrollmentId = student['enrollment_id'];
+                              final status = _attendance[enrollmentId];
+  
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
+                                ),
+                                title: Text('${student['first_name']} ${student['last_name']}'),
+                                subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
+                                trailing: _buildStatusChip(enrollmentId, status),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
       bottomSheet: _isLoading || _errorMessage != null ? null : _buildBottomBar(),
     );
   }
@@ -663,16 +668,18 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
           ],
         ),
       ),
-      body: _isLoadingClasses 
-        ? const Center(child: CircularProgressIndicator())
-        : TabBarView(
-            controller: _tabController,
-            children: [
-              _buildRegisterTab(),
-              _buildSummaryTab(),
-              _buildThresholdTab(),
-            ],
-          ),
+      body: SafeArea(
+        child: _isLoadingClasses 
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildRegisterTab(),
+                _buildSummaryTab(),
+                _buildThresholdTab(),
+              ],
+            ),
+      ),
     );
   }
 

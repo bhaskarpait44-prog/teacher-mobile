@@ -142,13 +142,15 @@ class _HomeworkPageState extends State<HomeworkPage> {
           IconButton(onPressed: _fetchHomework, icon: const Icon(Icons.refresh_rounded)),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchHomework,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : _buildHomeworkList(),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchHomework,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _buildErrorWidget()
+                  : _buildHomeworkList(),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -528,89 +530,91 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_isEditing ? 'Edit Homework' : 'Create Homework')),
-      body: _isLoading && _classes.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Class & Section'),
-                      value: _selectedClassId != null ? '${_selectedClassId}-${_selectedSectionId}' : null,
-                      items: _classes.map((c) {
-                        return DropdownMenuItem(
-                          value: '${c['class_id']}-${c['section_id']}',
-                          child: Text('${c['class_name']} ${c['section_name']}'),
-                        );
-                      }).toList(),
-                      onChanged: _onClassChanged,
-                      validator: (v) => v == null ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<int>(
-                      decoration: InputDecoration(
-                        labelText: 'Subject',
-                        suffixIcon: _isSubjectsLoading 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : null,
+      body: SafeArea(
+        child: _isLoading && _classes.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Class & Section'),
+                        value: _selectedClassId != null ? '${_selectedClassId}-${_selectedSectionId}' : null,
+                        items: _classes.map((c) {
+                          return DropdownMenuItem(
+                            value: '${c['class_id']}-${c['section_id']}',
+                            child: Text('${c['class_name']} ${c['section_name']}'),
+                          );
+                        }).toList(),
+                        onChanged: _onClassChanged,
+                        validator: (v) => v == null ? 'Required' : null,
                       ),
-                      value: _selectedSubjectId,
-                      items: _subjects.map((s) {
-                        return DropdownMenuItem<int>(value: s['id'], child: Text(s['name']));
-                      }).toList(),
-                      onChanged: _isSubjectsLoading ? null : (val) => setState(() => _selectedSubjectId = val),
-                      validator: (v) => v == null ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descController,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Due Date', style: TextStyle(fontSize: 12)),
-                      subtitle: Text(formatDate(_dueDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      trailing: const Icon(Icons.calendar_today_rounded),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _dueDate,
-                          firstDate: _isEditing ? _dueDate.subtract(const Duration(days: 365)) : DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
-                        );
-                        if (picked != null) setState(() => _dueDate = picked);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Submission Type'),
-                      value: _submissionType,
-                      items: const [
-                        DropdownMenuItem(value: 'text', child: Text('Text Only')),
-                        DropdownMenuItem(value: 'file', child: Text('File Upload')),
-                        DropdownMenuItem(value: 'both', child: Text('Both')),
-                      ],
-                      onChanged: (val) => setState(() => _submissionType = val!),
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _submit,
-                      child: Text(_isEditing ? 'Update Homework' : 'Create Homework'),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          labelText: 'Subject',
+                          suffixIcon: _isSubjectsLoading 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : null,
+                        ),
+                        value: _selectedSubjectId,
+                        items: _subjects.map((s) {
+                          return DropdownMenuItem<int>(value: s['id'], child: Text(s['name']));
+                        }).toList(),
+                        onChanged: _isSubjectsLoading ? null : (val) => setState(() => _selectedSubjectId = val),
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(labelText: 'Title'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descController,
+                        decoration: const InputDecoration(labelText: 'Description'),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Due Date', style: TextStyle(fontSize: 12)),
+                        subtitle: Text(formatDate(_dueDate.toIso8601String()), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        trailing: const Icon(Icons.calendar_today_rounded),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dueDate,
+                            firstDate: _isEditing ? _dueDate.subtract(const Duration(days: 365)) : DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (picked != null) setState(() => _dueDate = picked);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Submission Type'),
+                        value: _submissionType,
+                        items: const [
+                          DropdownMenuItem(value: 'text', child: Text('Text Only')),
+                          DropdownMenuItem(value: 'file', child: Text('File Upload')),
+                          DropdownMenuItem(value: 'both', child: Text('Both')),
+                        ],
+                        onChanged: (val) => setState(() => _submissionType = val!),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _submit,
+                        child: Text(_isEditing ? 'Update Homework' : 'Create Homework'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -723,72 +727,74 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Submissions: ${widget.title}')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: _submissions.isEmpty
-                      ? const Center(child: Text('No submissions yet'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _submissions.length,
-                          itemBuilder: (context, index) {
-                            final sub = _submissions[index];
-                            final id = sub['enrollment_id'];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('${sub['first_name']} ${sub['last_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        _buildStatusBadge(sub['status']),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    if (sub['submitted_at'] != null)
-                                      Text('Submitted: ${formatDate(sub['submitted_at'])}', style: const TextStyle(fontSize: 12)),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _marksControllers[id],
-                                            decoration: const InputDecoration(labelText: 'Marks', border: OutlineInputBorder()),
-                                            keyboardType: TextInputType.number,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Expanded(
+                    child: _submissions.isEmpty
+                        ? const Center(child: Text('No submissions yet'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _submissions.length,
+                            itemBuilder: (context, index) {
+                              final sub = _submissions[index];
+                              final id = sub['enrollment_id'];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text('${sub['first_name']} ${sub['last_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          _buildStatusBadge(sub['status']),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      if (sub['submitted_at'] != null)
+                                        Text('Submitted: ${formatDate(sub['submitted_at'])}', style: const TextStyle(fontSize: 12)),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller: _marksControllers[id],
+                                              decoration: const InputDecoration(labelText: 'Marks', border: OutlineInputBorder()),
+                                              keyboardType: TextInputType.number,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          flex: 2,
-                                          child: TextFormField(
-                                            controller: _feedbackControllers[id],
-                                            decoration: const InputDecoration(labelText: 'Feedback', border: OutlineInputBorder()),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            flex: 2,
+                                            child: TextFormField(
+                                              controller: _feedbackControllers[id],
+                                              decoration: const InputDecoration(labelText: 'Feedback', border: OutlineInputBorder()),
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ElevatedButton(
-                    onPressed: _submissions.isEmpty ? null : _saveGrades,
-                    child: const Text('Save All Grades'),
+                              );
+                            },
+                          ),
                   ),
-                ),
-              ],
-            ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: _submissions.isEmpty ? null : _saveGrades,
+                      child: const Text('Save All Grades'),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
