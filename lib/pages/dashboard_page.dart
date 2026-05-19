@@ -7,6 +7,9 @@ import '../utils/constants.dart';
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
+import 'marks_entry_page.dart';
+import 'leave_page.dart';
+import 'my_classes_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -158,6 +161,10 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(Icons.dashboard_rounded, 'Dashboard', true, () => Navigator.pop(context)),
+                _buildDrawerItem(Icons.class_rounded, 'My Classes', false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
+                }),
                 _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendancePage()));
@@ -170,8 +177,14 @@ class _DashboardPageState extends State<DashboardPage> {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
                 }),
-                _buildDrawerItem(Icons.assignment_rounded, 'Marks Entry', false, () {}),
-                _buildDrawerItem(Icons.beach_access_rounded, 'Leaves', false, () {}),
+                _buildDrawerItem(Icons.assignment_rounded, 'Marks Entry', false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MarksEntryPage()));
+                }),
+                _buildDrawerItem(Icons.beach_access_rounded, 'Leaves', false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const LeavePage()));
+                }),
                 const Divider(indent: 20, endIndent: 20),
                 _buildDrawerItem(Icons.person_outline_rounded, 'Profile', false, () {}),
                 _buildDrawerItem(Icons.logout_rounded, 'Logout', false, _handleLogout),
@@ -224,7 +237,9 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 12),
             _buildScheduleList(schedule),
             const SizedBox(height: 32),
-            _buildSectionHeader('My Classes', () {}),
+            _buildSectionHeader('My Classes', () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
+            }),
             const SizedBox(height: 12),
             _buildClassesList(myClasses),
             const SizedBox(height: 24),
@@ -281,11 +296,11 @@ class _DashboardPageState extends State<DashboardPage> {
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage())),
         ),
         _buildStatCard(
-          'Homework',
-          'Pending',
-          Icons.book_rounded,
+          'Marks',
+          '$pending Pending',
+          Icons.assignment_rounded,
           Colors.orange,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeworkPage())),
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MarksEntryPage())),
         ),
         _buildStatCard(
           'Attendance',
@@ -295,11 +310,11 @@ class _DashboardPageState extends State<DashboardPage> {
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendancePage())),
         ),
         _buildStatCard(
-          'Students',
-          '${glance['my_students_today']?['percentage'] ?? 0}%',
-          Icons.people_alt_rounded,
+          'Leave',
+          'Balance',
+          Icons.beach_access_rounded,
           Colors.purple,
-          () {},
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LeavePage())),
         ),
       ],
     );
@@ -329,7 +344,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
                 Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
               ],
             ),
@@ -426,6 +441,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: const Text('LIVE', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
                   )
                 : Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
+            onTap: () {
+               Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
+            },
           ),
         );
       }).toList(),
@@ -463,39 +481,53 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${item['class_name']} ${item['section_name']}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ClassOverviewPage(
+                      classId: item['class_id'],
+                      sectionId: item['section_id'],
+                      className: '${item['class_name']} ${item['section_name']}',
                     ),
-                    const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${item['student_count'] ?? 0} Students',
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                      child: const Text(
-                        'Class Teacher',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${item['class_name']} ${item['section_name']}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 20),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${item['student_count'] ?? 0} Students',
+                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: const Text(
+                          'Class Teacher',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
