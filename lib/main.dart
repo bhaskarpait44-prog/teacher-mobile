@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'pages/login_page.dart';
+import 'utils/theme.dart';
 
 void main() {
   runApp(const TeacherApp());
@@ -11,11 +12,9 @@ class TeacherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Teacher Mobile',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      title: 'EduHard Teacher',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       home: const LoginPage(),
     );
   }
