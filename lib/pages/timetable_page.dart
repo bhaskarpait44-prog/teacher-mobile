@@ -85,7 +85,7 @@ class _TimetablePageState extends State<TimetablePage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (mounted) setState(() => _exams = data['data']['exams'] ?? []);
+        if (mounted) setState(() => _exams = data['data']['timetable'] ?? []);
       }
     } catch (_) {}
   }
@@ -282,20 +282,37 @@ class _TimetablePageState extends State<TimetablePage> {
       itemCount: _exams.length,
       itemBuilder: (context, index) {
         final exam = _exams[index];
+        final colorScheme = Theme.of(context).colorScheme;
+        final isDuty = exam['duty_type'] == 'invigilator';
+
         return Card(
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
+            leading: CircleAvatar(
+              backgroundColor: isDuty ? Colors.orange.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                isDuty ? Icons.security_rounded : Icons.assignment_rounded,
+                color: isDuty ? Colors.orange : colorScheme.primary,
+              ),
+            ),
             title: Text(exam['exam_name'] ?? 'Exam', style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${exam['subject_name']} • ${exam['class_name']} ${exam['section_name']}'),
+                Text('${exam['subject_name']} • ${exam['class_name']}'),
+                if (isDuty)
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    child: const Text('INVIGILATION DUTY', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_rounded, size: 14),
                     const SizedBox(width: 4),
-                    Text(formatDate(exam['date'])),
+                    Text(formatDate(exam['exam_date'])),
                     const SizedBox(width: 12),
                     const Icon(Icons.access_time_rounded, size: 14),
                     const SizedBox(width: 4),

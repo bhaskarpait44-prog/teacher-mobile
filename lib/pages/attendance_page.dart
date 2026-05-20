@@ -166,6 +166,7 @@ class _AttendancePageState extends State<AttendancePage> {
                     sectionId: item['section_id'],
                     className: item['class_name'],
                     sectionName: item['section_name'],
+                    isClassTeacher: item['is_class_teacher'] ?? false,
                   ),
                 ),
               ).then((_) => _fetchAttendanceStatus());
@@ -182,6 +183,7 @@ class MarkAttendancePage extends StatefulWidget {
   final int sectionId;
   final String className;
   final String sectionName;
+  final bool isClassTeacher;
 
   const MarkAttendancePage({
     super.key,
@@ -189,6 +191,7 @@ class MarkAttendancePage extends StatefulWidget {
     required this.sectionId,
     required this.className,
     required this.sectionName,
+    required this.isClassTeacher,
   });
 
   @override
@@ -270,6 +273,13 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   }
 
   Future<void> _submitAttendance() async {
+    if (!widget.isClassTeacher) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only the class teacher is eligible to mark attendance.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     if (_requiresReason && _reasonController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please provide a reason for marking/editing attendance')),
@@ -358,6 +368,24 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  if (!widget.isClassTeacher)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      color: Colors.red.withOpacity(0.1),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Only the assigned class teacher is eligible to mark or edit attendance.',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   _buildHeader(),
                   if (_isHoliday)
                     Container(
@@ -431,30 +459,31 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
               Text('${_students.length} Students', style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    for (var student in _students) {
-                      _attendance[student['enrollment_id']] = 'present';
-                    }
-                  });
-                },
-                child: const Text('All P', style: TextStyle(color: Colors.green)),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    for (var student in _students) {
-                      _attendance[student['enrollment_id']] = 'absent';
-                    }
-                  });
-                },
-                child: const Text('All A', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
+          if (widget.isClassTeacher)
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      for (var student in _students) {
+                        _attendance[student['enrollment_id']] = 'present';
+                      }
+                    });
+                  },
+                  child: const Text('All P', style: TextStyle(color: Colors.green)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      for (var student in _students) {
+                        _attendance[student['enrollment_id']] = 'absent';
+                      }
+                    });
+                  },
+                  child: const Text('All A', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -462,6 +491,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
 
   Widget _buildStatusChip(int enrollmentId, String? status) {
     return PopupMenuButton<String>(
+      enabled: widget.isClassTeacher,
       onSelected: (val) {
         setState(() => _attendance[enrollmentId] = val);
       },
@@ -491,6 +521,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   }
 
   Widget _buildBottomBar() {
+    if (!widget.isClassTeacher) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -558,7 +589,10 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            _classes = data['data']['classes'] ?? [];
+            final myClass = data['data']['my_class'] ?? [];
+            final subjectClasses = data['data']['subject_classes'] ?? [];
+            _classes = [...myClass, ...subjectClasses];
+            
             if (_classes.isNotEmpty) {
               _selectedClassId = _classes[0]['class_id'];
               _selectedSectionId = _classes[0]['section_id'];

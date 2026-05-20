@@ -310,6 +310,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = true;
   List<dynamic> _classes = [];
+  List<dynamic> _allAssignments = [];
   String? _classesError;
   List<dynamic> _subjects = [];
   bool _isSubjectsLoading = false;
@@ -319,8 +320,9 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   int? _selectedSubjectId;
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final _maxMarksController = TextEditingController();
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
-  String _submissionType = 'text';
+  String _submissionType = 'online';
 
   bool get _isEditing => widget.homework != null;
 
@@ -330,8 +332,9 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
     if (_isEditing) {
       _titleController.text = widget.homework!['title'] ?? '';
       _descController.text = widget.homework!['description'] ?? '';
+      _maxMarksController.text = widget.homework!['max_marks']?.toString() ?? '';
       _dueDate = DateTime.tryParse(widget.homework!['due_date'] ?? '') ?? _dueDate;
-      _submissionType = widget.homework!['submission_type'] ?? 'text';
+      _submissionType = widget.homework!['submission_type'] ?? 'online';
       _selectedClassId = widget.homework!['class_id'];
       _selectedSectionId = widget.homework!['section_id'];
       _selectedSubjectId = widget.homework!['subject_id'];
@@ -343,6 +346,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
+    _maxMarksController.dispose();
     super.dispose();
   }
 
@@ -361,8 +365,22 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
+          final myClass = data['data']['my_class'] ?? [];
+          final subjectClasses = data['data']['subject_classes'] ?? [];
+          final allAssignments = [...myClass, ...subjectClasses];
+
+          // Unique by class_id and section_id for the dropdown
+          final seen = <String>{};
+          final uniqueClasses = allAssignments.where((a) {
+            final key = '${a['class_id']}-${a['section_id']}';
+            if (seen.contains(key)) return false;
+            seen.add(key);
+            return true;
+          }).toList();
+
           setState(() {
-            _classes = data['data']['classes'] ?? [];
+            _allAssignments = allAssignments;
+            _classes = uniqueClasses;
             if (_isEditing) {
                _onClassChanged('${_selectedClassId}-${_selectedSectionId}', fetchOnly: true);
             }
@@ -390,87 +408,25 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   Future<void> _fetchSubjects() async {
     if (_selectedClassId == null || _selectedSectionId == null) return;
 
-    setState(() => _isSubjectsLoading = true);
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+    final subjects = _allAssignments
+        .where((a) => a['class_id'] == _selectedClassId && a['section_id'] == _selectedSectionId && a['subject_id'] != null)
+        .map((a) => {
+          'id': a['subject_id'],
+          'name': a['subject_name'],
+        })
+        .toList();
 
-      // Step 1: Try to fetch from marks/exams
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/marks/exams'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+    // Unique subjects
+    final seen = <int>{};
+    final uniqueSubjects = subjects.where((s) {
+      if (seen.contains(s['id'])) return false;
+      seen.add(s['id']);
+      return true;
+    }).toList();
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List exams = data['data']['exams'] ?? [];
-        final List<Map<String, dynamic>> foundSubjects = [];
-        final Set<int> subjectIds = {};
-
-        for (var exam in exams) {
-          final List subjects = exam['subjects'] ?? [];
-          for (var s in subjects) {
-            if (s['class_id'] == _selectedClassId && s['section_id'] == _selectedSectionId) {
-              if (!subjectIds.contains(s['subject_id'])) {
-                subjectIds.add(s['subject_id']);
-                foundSubjects.add({
-                  'id': s['subject_id'],
-                  'name': s['subject_name'],
-                });
-              }
-            }
-          }
-        }
-
-        if (foundSubjects.isNotEmpty) {
-          if (mounted) {
-            setState(() {
-              _subjects = foundSubjects;
-              _isSubjectsLoading = false;
-            });
-            return;
-          }
-        }
-      }
-
-      // Step 2: Fallback to timetable if no exams or subjects found
-      final timetableRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/timetable'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      if (timetableRes.statusCode == 200) {
-        final data = jsonDecode(timetableRes.body);
-        final Map<String, dynamic> timetable = data['data']['timetable'] ?? {};
-        final List<Map<String, dynamic>> foundSubjects = [];
-        final Set<String> subjectNames = {};
-
-        timetable.forEach((day, periods) {
-          for (var p in (periods as List)) {
-            if (p['class_id'] == _selectedClassId && p['section_id'] == _selectedSectionId) {
-              if (!subjectNames.contains(p['subject_name'])) {
-                subjectNames.add(p['subject_name']);
-                foundSubjects.add({
-                  'id': p['subject_id'] ?? subjectNames.length, // use subject_id if exists
-                  'name': p['subject_name'],
-                });
-              }
-            }
-          }
-        });
-
-        if (mounted) {
-          setState(() {
-            _subjects = foundSubjects;
-            _isSubjectsLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isSubjectsLoading = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isSubjectsLoading = false);
-    }
+    setState(() {
+      _subjects = uniqueSubjects;
+    });
   }
 
   void _onClassChanged(String? val, {bool fetchOnly = false}) {
@@ -517,6 +473,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
           'description': _descController.text.trim(),
           'due_date': _dueDate.toIso8601String().split('T')[0],
           'submission_type': _submissionType,
+          'max_marks': _maxMarksController.text.isNotEmpty ? double.tryParse(_maxMarksController.text) : null,
         }),
       );
 
@@ -615,6 +572,12 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                         maxLines: 3,
                       ),
                       const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _maxMarksController,
+                        decoration: const InputDecoration(labelText: 'Max Marks (Optional)'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 16),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Due Date', style: TextStyle(fontSize: 12)),
@@ -635,8 +598,8 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                         decoration: const InputDecoration(labelText: 'Submission Type'),
                         value: _submissionType,
                         items: const [
-                          DropdownMenuItem(value: 'text', child: Text('Text Only')),
-                          DropdownMenuItem(value: 'file', child: Text('File Upload')),
+                          DropdownMenuItem(value: 'online', child: Text('Online (App)')),
+                          DropdownMenuItem(value: 'written', child: Text('Written (Physical)')),
                           DropdownMenuItem(value: 'both', child: Text('Both')),
                         ],
                         onChanged: (val) => setState(() => _submissionType = val!),
@@ -707,9 +670,11 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
           setState(() {
             _submissions = data['data']['submissions'] ?? [];
             for (var sub in _submissions) {
-              final id = sub['enrollment_id'];
-              _marksControllers[id] = TextEditingController(text: sub['marks_obtained']?.toString() ?? '');
-              _feedbackControllers[id] = TextEditingController(text: sub['teacher_comment'] ?? '');
+              final id = sub['id'];
+              if (id != null) {
+                _marksControllers[id] = TextEditingController(text: sub['marks_obtained']?.toString() ?? '');
+                _feedbackControllers[id] = TextEditingController(text: sub['teacher_comment'] ?? '');
+              }
             }
             _isLoading = false;
           });
@@ -727,7 +692,9 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
       final token = authProvider.token;
 
       for (var sub in _submissions) {
-        final id = sub['enrollment_id'];
+        final id = sub['id'];
+        if (id == null) continue;
+        
         final marks = _marksControllers[id]?.text;
         final feedback = _feedbackControllers[id]?.text;
 
@@ -739,9 +706,9 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
               'Authorization': 'Bearer $token',
             },
             body: jsonEncode({
-              'enrollment_id': id,
-              'marks': marks,
-              'feedback': feedback,
+              'submission_id': id,
+              'marks_obtained': marks,
+              'teacher_comment': feedback,
             }),
           );
         }
@@ -776,7 +743,7 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
                             itemCount: _submissions.length,
                             itemBuilder: (context, index) {
                               final sub = _submissions[index];
-                              final id = sub['enrollment_id'];
+                              final id = sub['id'];
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 child: Padding(
@@ -799,17 +766,19 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
                                         children: [
                                           Expanded(
                                             child: TextFormField(
-                                              controller: _marksControllers[id],
+                                              controller: id != null ? _marksControllers[id] : null,
                                               decoration: const InputDecoration(labelText: 'Marks', border: OutlineInputBorder()),
                                               keyboardType: TextInputType.number,
+                                              enabled: id != null,
                                             ),
                                           ),
                                           const SizedBox(width: 16),
                                           Expanded(
                                             flex: 2,
                                             child: TextFormField(
-                                              controller: _feedbackControllers[id],
+                                              controller: id != null ? _feedbackControllers[id] : null,
                                               decoration: const InputDecoration(labelText: 'Feedback', border: OutlineInputBorder()),
+                                              enabled: id != null,
                                             ),
                                           ),
                                         ],

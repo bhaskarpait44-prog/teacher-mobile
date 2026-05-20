@@ -204,7 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'field': _correctionField,
+          'field_name': _correctionField,
           'current_value': currentValue,
           'requested_value': _requestedValueController.text.trim(),
           'reason': _reasonController.text.trim(),
@@ -242,19 +242,96 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           _buildProfileHeader(),
                           const SizedBox(height: 32),
+                          _buildStatsSection(),
+                          const SizedBox(height: 32),
                           _buildContactInfo(),
+                          const SizedBox(height: 32),
+                          _buildAcademicInfo(),
                           const SizedBox(height: 32),
                           _buildAccountInfo(),
                           const SizedBox(height: 32),
                           _buildChangePassword(),
                           const SizedBox(height: 32),
                           _buildCorrectionRequest(),
+                          const SizedBox(height: 32),
+                          _buildCorrectionHistory(),
                           const SizedBox(height: 40),
                         ],
                       ),
                     ),
-                  ),
+...
+  Widget _buildCorrectionHistory() {
+    final requests = _profile?['correctionRequests'] as List?;
+    if (requests == null || requests.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Recent Correction Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...requests.map((req) {
+          final status = req['status']?.toString().toLowerCase();
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(req['field_name'].toString().replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              subtitle: Text('Requested: ${req['requested_value']}\nReason: ${req['reason']}', style: const TextStyle(fontSize: 11)),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: getStatusColor(status, context).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  status?.toUpperCase() ?? 'PENDING',
+                  style: TextStyle(color: getStatusColor(status, context), fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
+              isThreeLine: true,
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildStatsSection() {
+    return Row(
+      children: [
+        Expanded(child: _buildStatCard('Attendance Rate', '${_profile?['attendanceRate']?['on_time_rate'] ?? 0}%', Icons.calendar_today_outlined, Colors.blue)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildStatCard('Exams Published', '${_profile?['marksSummary']?['published_exams'] ?? 0}', Icons.assignment_turned_in_outlined, Colors.green)),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 8),
+            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(fontSize: 10)),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildAcademicInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Academic Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        _buildInfoRow(Icons.school_outlined, 'Qualification', _profile?['highest_qualification']),
+        _buildInfoRow(Icons.book_outlined, 'Specialization', _profile?['specialization']),
+        _buildInfoRow(Icons.account_balance_outlined, 'University', _profile?['university_name']),
+        _buildInfoRow(Icons.history_edu_outlined, 'Exp. (Years)', _profile?['years_of_experience']?.toString()),
+      ],
     );
   }
 

@@ -274,7 +274,7 @@ class _LeavePageState extends State<LeavePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${formatDate(leave['start_date'])} to ${formatDate(leave['end_date'])}',
+              '${formatDate(leave['from_date'])} to ${formatDate(leave['to_date'])}',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 4),
@@ -342,8 +342,8 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
         },
         body: jsonEncode({
           'leave_type': _leaveType,
-          'start_date': _startDate.toIso8601String().split('T')[0],
-          'end_date': _endDate.toIso8601String().split('T')[0],
+          'from_date': _startDate.toIso8601String().split('T')[0],
+          'to_date': _endDate.toIso8601String().split('T')[0],
           'reason': _reasonController.text.trim(),
         }),
       );
@@ -390,6 +390,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                     DropdownMenuItem(value: 'sick', child: Text('Sick Leave')),
                     DropdownMenuItem(value: 'earned', child: Text('Earned Leave')),
                     DropdownMenuItem(value: 'emergency', child: Text('Emergency Leave')),
+                    DropdownMenuItem(value: 'without_pay', child: Text('Leave Without Pay')),
                   ],
                   onChanged: (val) => setState(() => _leaveType = val!),
                 ),

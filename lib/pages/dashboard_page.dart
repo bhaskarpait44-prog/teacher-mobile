@@ -299,6 +299,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final glance = _dashboardData?['today_at_a_glance'];
     final schedule = _dashboardData?['today_schedule'] as List?;
     final myClasses = _dashboardData?['my_class'] as List?;
+    final upcomingExams = _dashboardData?['upcoming_exams'] as List?;
 
     return RefreshIndicator(
       onRefresh: _fetchDashboardData,
@@ -317,6 +318,14 @@ class _DashboardPageState extends State<DashboardPage> {
             }),
             const SizedBox(height: 12),
             _buildScheduleList(schedule),
+            if (upcomingExams != null && upcomingExams.isNotEmpty) ...[
+              const SizedBox(height: 32),
+              _buildSectionHeader('Upcoming Exams', () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
+              }),
+              const SizedBox(height: 12),
+              _buildExamsList(upcomingExams),
+            ],
             const SizedBox(height: 32),
             _buildSectionHeader('My Classes', () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
@@ -327,6 +336,66 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildExamsList(List exams) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      children: exams.map((exam) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              width: 50,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Icon(Icons.assignment_turned_in_rounded, color: colorScheme.error, size: 24),
+              ),
+            ),
+            title: Text(
+              '${exam['exam_name']}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${exam['subject_name']} • ${exam['class_name']}',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 12, color: colorScheme.primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatDate(exam['exam_date']),
+                      style: TextStyle(color: colorScheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
+            },
+          ),
+        );
+      }).toList(),
     );
   }
 
