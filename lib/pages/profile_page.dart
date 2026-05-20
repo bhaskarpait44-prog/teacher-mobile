@@ -259,39 +259,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                     ),
-...
-  Widget _buildCorrectionHistory() {
-    final requests = _profile?['correctionRequests'] as List?;
-    if (requests == null || requests.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Recent Correction Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...requests.map((req) {
-          final status = req['status']?.toString().toLowerCase();
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              title: Text(req['field_name'].toString().replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              subtitle: Text('Requested: ${req['requested_value']}\nReason: ${req['reason']}', style: const TextStyle(fontSize: 11)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: getStatusColor(status, context).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status?.toUpperCase() ?? 'PENDING',
-                  style: TextStyle(color: getStatusColor(status, context), fontSize: 9, fontWeight: FontWeight.bold),
-                ),
-              ),
-              isThreeLine: true,
-            ),
-          );
-        }).toList(),
-      ],
+                  ),
+      ),
     );
   }
 
@@ -331,6 +300,41 @@ class _ProfilePageState extends State<ProfilePage> {
         _buildInfoRow(Icons.book_outlined, 'Specialization', _profile?['specialization']),
         _buildInfoRow(Icons.account_balance_outlined, 'University', _profile?['university_name']),
         _buildInfoRow(Icons.history_edu_outlined, 'Exp. (Years)', _profile?['years_of_experience']?.toString()),
+      ],
+    );
+  }
+
+  Widget _buildCorrectionHistory() {
+    final requests = _profile?['correctionRequests'] as List?;
+    if (requests == null || requests.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Recent Correction Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...requests.map((req) {
+          final status = req['status']?.toString().toLowerCase();
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(req['field_name'].toString().replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              subtitle: Text('Requested: ${req['requested_value']}\nReason: ${req['reason']}', style: const TextStyle(fontSize: 11)),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: getStatusColor(status, context).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  status?.toUpperCase() ?? 'PENDING',
+                  style: TextStyle(color: getStatusColor(status, context), fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
+              isThreeLine: true,
+            ),
+          );
+        }).toList(),
       ],
     );
   }
@@ -528,12 +532,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildCorrectionRequest() {
     final colorScheme = Theme.of(context).colorScheme;
     
-    String currentValue = 'Select a field to see current value';
-    if (_correctionField == 'name') currentValue = _profile?['name'] ?? 'N/A';
-    else if (_correctionField == 'employee_id') currentValue = _profile?['employee_id'] ?? 'N/A';
-    else if (_correctionField == 'dob') currentValue = _profile?['dob'] ?? 'N/A';
-    else if (_correctionField == 'gender') currentValue = _profile?['gender'] ?? 'N/A';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

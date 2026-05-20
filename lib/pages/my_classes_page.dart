@@ -128,6 +128,7 @@ class _MyClassesPageState extends State<MyClassesPage> {
                     sectionId: item['section_id'],
                     className: item['class_name'],
                     sectionName: item['section_name'],
+                    isClassTeacher: item['is_class_teacher'] ?? false,
                   ),
                 ),
               );
@@ -168,6 +169,7 @@ class ClassOverviewPage extends StatefulWidget {
   final int sectionId;
   final String className;
   final String sectionName;
+  final bool isClassTeacher;
 
   const ClassOverviewPage({
     super.key,
@@ -175,6 +177,7 @@ class ClassOverviewPage extends StatefulWidget {
     required this.sectionId,
     required this.className,
     required this.sectionName,
+    required this.isClassTeacher,
   });
 
   @override
@@ -401,6 +404,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
                     sectionId: widget.sectionId,
                     className: widget.className,
                     sectionName: widget.sectionName,
+                    isClassTeacher: widget.isClassTeacher,
                   ),
                 ),
               ).then((_) => _fetchData());
