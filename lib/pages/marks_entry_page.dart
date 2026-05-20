@@ -318,9 +318,16 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
       
-      final marksData = _students.map((s) => {
-        'enrollment_id': s['enrollment_id'],
-        'marks': double.parse(_controllers[s['enrollment_id']]!.text),
+      final entries = _students.map((s) {
+        final marksStr = _controllers[s['enrollment_id']]!.text.trim();
+        return {
+          'exam_id': widget.examId,
+          'subject_id': widget.subjectId,
+          'class_id': widget.classId,
+          'section_id': widget.sectionId,
+          'enrollment_id': s['enrollment_id'],
+          'marks_obtained': marksStr.isEmpty ? null : double.tryParse(marksStr),
+        };
       }).toList();
 
       // Step 1: Always bulk-save marks first
@@ -331,11 +338,7 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'exam_id': widget.examId,
-          'subject_id': widget.subjectId,
-          'class_id': widget.classId,
-          'section_id': widget.sectionId,
-          'marks_data': marksData,
+          'entries': entries,
         }),
       );
 

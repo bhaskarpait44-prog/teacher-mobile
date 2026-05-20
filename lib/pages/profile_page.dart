@@ -78,9 +78,10 @@ class _ProfilePageState extends State<ProfilePage> {
         if (mounted) {
           setState(() {
             _profile = data['data'];
-            _phoneController.text = _profile?['phone'] ?? '';
-            _emergencyController.text = _profile?['emergency_contact'] ?? '';
-            _addressController.text = _profile?['address'] ?? '';
+            final profileData = _profile?['profile'];
+            _phoneController.text = profileData?['phone'] ?? '';
+            _emergencyController.text = profileData?['emergency_contact'] ?? '';
+            _addressController.text = profileData?['address'] ?? '';
             _isLoading = false;
           });
         }
@@ -265,11 +266,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildStatsSection() {
+    final stats = _profile?['performance_summary'];
     return Row(
       children: [
-        Expanded(child: _buildStatCard('Attendance Rate', '${_profile?['attendanceRate']?['on_time_rate'] ?? 0}%', Icons.calendar_today_outlined, Colors.blue)),
+        Expanded(child: _buildStatCard('Attendance Rate', '${stats?['attendance_marking_rate']?['on_time_rate'] ?? 0}%', Icons.calendar_today_outlined, Colors.blue)),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard('Exams Published', '${_profile?['marksSummary']?['published_exams'] ?? 0}', Icons.assignment_turned_in_outlined, Colors.green)),
+        Expanded(child: _buildStatCard('Exams Published', '${stats?['marks_entry_completion_rate']?['total'] ?? 0}', Icons.assignment_turned_in_outlined, Colors.green)),
       ],
     );
   }
@@ -291,21 +293,22 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAcademicInfo() {
+    final profileData = _profile?['profile'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Academic Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildInfoRow(Icons.school_outlined, 'Qualification', _profile?['highest_qualification']),
-        _buildInfoRow(Icons.book_outlined, 'Specialization', _profile?['specialization']),
-        _buildInfoRow(Icons.account_balance_outlined, 'University', _profile?['university_name']),
-        _buildInfoRow(Icons.history_edu_outlined, 'Exp. (Years)', _profile?['years_of_experience']?.toString()),
+        _buildInfoRow(Icons.school_outlined, 'Qualification', profileData?['highest_qualification']),
+        _buildInfoRow(Icons.book_outlined, 'Specialization', profileData?['specialization']),
+        _buildInfoRow(Icons.account_balance_outlined, 'University', profileData?['university_name']),
+        _buildInfoRow(Icons.history_edu_outlined, 'Exp. (Years)', profileData?['years_of_experience']?.toString()),
       ],
     );
   }
 
   Widget _buildCorrectionHistory() {
-    final requests = _profile?['correctionRequests'] as List?;
+    final requests = _profile?['correction_requests'] as List?;
     if (requests == null || requests.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -365,7 +368,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileHeader() {
-    final name = _profile?['name'] ?? 'Teacher';
+    final profileData = _profile?['profile'];
+    final name = profileData?['name'] ?? 'Teacher';
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
@@ -379,18 +383,18 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 16),
             Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            Text(_profile?['designation'] ?? 'Designation', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(profileData?['designation'] ?? 'Designation', style: TextStyle(color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildHeaderBadge(Icons.badge_outlined, _profile?['employee_id'] ?? 'ID'),
+                _buildHeaderBadge(Icons.badge_outlined, profileData?['employee_id'] ?? 'ID'),
                 const SizedBox(width: 16),
-                _buildHeaderBadge(Icons.business_outlined, _profile?['department'] ?? 'Dept'),
+                _buildHeaderBadge(Icons.business_outlined, profileData?['department'] ?? 'Dept'),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Joined on ${formatDate(_profile?['joining_date'])}', style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+            Text('Joined on ${formatDate(profileData?['joining_date'])}', style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -409,6 +413,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildContactInfo() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profileData = _profile?['profile'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -436,9 +441,9 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('Save Contact Info'),
           ),
         ] else ...[
-          _buildInfoRow(Icons.phone_outlined, 'Phone', _profile?['phone']),
-          _buildInfoRow(Icons.contact_emergency_outlined, 'Emergency', _profile?['emergency_contact']),
-          _buildInfoRow(Icons.location_on_outlined, 'Address', _profile?['address']),
+          _buildInfoRow(Icons.phone_outlined, 'Phone', profileData?['phone']),
+          _buildInfoRow(Icons.contact_emergency_outlined, 'Emergency', profileData?['emergency_contact']),
+          _buildInfoRow(Icons.location_on_outlined, 'Address', profileData?['address']),
         ],
       ],
     );
@@ -481,12 +486,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAccountInfo() {
+    final profileData = _profile?['profile'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Account Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildInfoRow(Icons.email_outlined, 'Email', _profile?['email']),
+        _buildInfoRow(Icons.email_outlined, 'Email', profileData?['email']),
         _buildInfoRow(Icons.admin_panel_settings_outlined, 'Role', 'Teacher'),
       ],
     );
@@ -531,6 +537,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildCorrectionRequest() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profileData = _profile?['profile'];
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,10 +560,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
           onChanged: (val) => setState(() {
             _correctionField = val;
-            if (val == 'name') _currentValueController.text = _profile?['name'] ?? 'N/A';
-            else if (val == 'employee_id') _currentValueController.text = _profile?['employee_id'] ?? 'N/A';
-            else if (val == 'dob') _currentValueController.text = _profile?['dob'] ?? 'N/A';
-            else if (val == 'gender') _currentValueController.text = _profile?['gender'] ?? 'N/A';
+            if (val == 'name') _currentValueController.text = profileData?['name'] ?? 'N/A';
+            else if (val == 'employee_id') _currentValueController.text = profileData?['employee_id'] ?? 'N/A';
+            else if (val == 'dob') _currentValueController.text = profileData?['dob'] ?? 'N/A';
+            else if (val == 'gender') _currentValueController.text = profileData?['gender'] ?? 'N/A';
           }),
         ),
         const SizedBox(height: 12),
