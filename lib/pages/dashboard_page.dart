@@ -624,6 +624,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       sectionId: item['section_id'],
                       className: item['class_name'],
                       sectionName: item['section_name'],
+                      isClassTeacher: item['is_class_teacher'] ?? false,
                     ),
                   ),
                 );
