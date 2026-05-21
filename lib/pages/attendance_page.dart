@@ -275,7 +275,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   }
 
   Future<void> _showSuccessAnimation() async {
-    return showGeneralDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.5),
