@@ -8,7 +8,6 @@ import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 import '../utils/notification_service.dart';
-
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
@@ -429,7 +428,7 @@ class _DashboardHomeState extends State<DashboardHome> {
         _buildStatCard(
           'My Classes',
           '${myClasses?.length ?? 0} classes',
-          Icons.class__rounded,
+          Icons.class_,
           Colors.blue,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage())),
         ),
@@ -578,22 +577,5 @@ class _DashboardHomeState extends State<DashboardHome> {
       }).toList(),
     );
   }
+}
 
-  Widget _buildClassesList(List? myClasses) {
-    if (myClasses == null || myClasses.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: myClasses.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 16),
-        itemBuilder: (context, index) {
-          final item = myClasses[index];
-          final colorScheme = Theme.of(context).colorScheme;
-          return Container(
-.
-.
-.
