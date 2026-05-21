@@ -9,11 +9,8 @@ import 'utils/theme.dart';
 import 'utils/notification_service.dart';
 import 'pages/login_page.dart';
 import 'pages/dashboard_page.dart';
-<<<<<<< HEAD
 import 'pages/pin_login_page.dart';
 import 'pages/pin_setup_page.dart';
-=======
->>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -78,7 +75,6 @@ class AuthWrapper extends StatelessWidget {
         }
         
         if (authProvider.isAuthenticated) {
-<<<<<<< HEAD
           if (!authProvider.hasPin) {
             return const PinSetupPage();
           }
@@ -87,8 +83,6 @@ class AuthWrapper extends StatelessWidget {
             return const PinLoginPage();
           }
           
-=======
->>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
           return const DashboardPage();
         }
         
