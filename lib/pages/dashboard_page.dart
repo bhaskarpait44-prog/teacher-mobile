@@ -8,7 +8,7 @@ import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 import '../utils/notification_service.dart';
-import '../widgets/app_drawer.dart';
+
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
@@ -33,7 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
     const DashboardHome(),
     const AttendancePage(),
     const TimetablePage(),
-    const ProfilePage(),
+    const HomeworkPage(),
   ];
 
   @override
@@ -88,9 +88,9 @@ class _DashboardPageState extends State<DashboardPage> {
               label: 'Timetable',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              icon: Icon(Icons.menu_book_outlined),
+              activeIcon: Icon(Icons.menu_book_rounded),
+              label: 'Homework',
             ),
           ],
         ),
@@ -196,6 +196,10 @@ class _DashboardHomeState extends State<DashboardHome> {
     
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.person_outline_rounded),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
+        ),
         title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           Consumer<NoticeProvider>(
@@ -244,7 +248,6 @@ class _DashboardHomeState extends State<DashboardHome> {
           const SizedBox(width: 8),
         ],
       ),
-      drawer: const AppDrawer(currentRoute: 'Dashboard'),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -297,7 +300,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             _buildWelcomeHeader(teacher?['name'] ?? 'Teacher'),
             const SizedBox(height: 24),
-            _buildStatGrid(glance),
+            _buildStatGrid(glance, myClasses),
             const SizedBox(height: 32),
             _buildSectionHeader('Today\'s Schedule', () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
@@ -312,12 +315,6 @@ class _DashboardHomeState extends State<DashboardHome> {
               const SizedBox(height: 12),
               _buildExamsList(upcomingExams),
             ],
-            const SizedBox(height: 32),
-            _buildSectionHeader('My Classes', () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
-            }),
-            const SizedBox(height: 12),
-            _buildClassesList(myClasses),
             const SizedBox(height: 24),
           ],
         ),
@@ -415,7 +412,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildStatGrid(Map<String, dynamic>? glance) {
+  Widget _buildStatGrid(Map<String, dynamic>? glance, List? myClasses) {
     final classes = glance?['todays_classes'];
     final attendance = glance?['attendance_status'];
     final pendingData = glance?['pending_marks'];
@@ -430,11 +427,11 @@ class _DashboardHomeState extends State<DashboardHome> {
       childAspectRatio: 1.4,
       children: [
         _buildStatCard(
-          'Periods',
-          '${classes?['total_periods'] ?? 0}',
-          Icons.calendar_today_rounded,
+          'My Classes',
+          '${myClasses?.length ?? 0} classes',
+          Icons.class__rounded,
           Colors.blue,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage())),
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage())),
         ),
         _buildStatCard(
           'Marks',
@@ -597,82 +594,6 @@ class _DashboardHomeState extends State<DashboardHome> {
           final item = myClasses[index];
           final colorScheme = Theme.of(context).colorScheme;
           return Container(
-            width: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ClassOverviewPage(
-                      classId: item['class_id'],
-                      sectionId: item['section_id'],
-                      className: item['class_name'],
-                      sectionName: item['section_name'],
-                      isClassTeacher: item['is_class_teacher'] ?? false,
-                    ),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(24),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${item['class_name']} ${item['section_name']}',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 20),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${item['student_count'] ?? 0} Students',
-                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                          child: const Text(
-                            'Class Teacher',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+.
+.
+.
