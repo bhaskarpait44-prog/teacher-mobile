@@ -8,6 +8,7 @@ import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 import '../utils/notification_service.dart';
+import '../widgets/app_drawer.dart';
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
@@ -26,15 +27,18 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  bool _isLoading = true;
-  Map<String, dynamic>? _dashboardData;
-  String? _errorMessage;
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    const DashboardHome(),
+    const AttendancePage(),
+    const TimetablePage(),
+    const ProfilePage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
-    _fetchNotices();
     _registerPushToken();
   }
 
@@ -45,6 +49,73 @@ class _DashboardPageState extends State<DashboardPage> {
         NotificationService.registerToken(authProvider.token!);
       }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          type: BottomNavigationBarType.fixed,
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard_rounded),
+              label: 'Dashboard',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.how_to_reg_outlined),
+              activeIcon: Icon(Icons.how_to_reg_rounded),
+              label: 'Attendance',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_month_outlined),
+              activeIcon: Icon(Icons.calendar_month_rounded),
+              label: 'Timetable',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardHome extends StatefulWidget {
+  const DashboardHome({super.key});
+
+  @override
+  State<DashboardHome> createState() => _DashboardHomeState();
+}
+
+class _DashboardHomeState extends State<DashboardHome> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _dashboardData;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+    _fetchNotices();
   }
 
   void _fetchNotices() {
@@ -122,8 +193,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final colorScheme = Theme.of(context).colorScheme;
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -174,7 +244,7 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(width: 8),
         ],
       ),
-      drawer: _buildDrawer(context),
+      drawer: const AppDrawer(currentRoute: 'Dashboard'),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -207,90 +277,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
-    final name = user?['name'] ?? 'Teacher';
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Drawer(
-      child: Column(
-        children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: colorScheme.primary),
-            accountName: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            accountEmail: const Text('Teacher Portal', style: TextStyle(color: Colors.white70)),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                name.isNotEmpty ? name[0] : 'T',
-                style: TextStyle(fontSize: 32, color: colorScheme.primary, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildDrawerItem(Icons.dashboard_rounded, 'Dashboard', true, () => Navigator.pop(context)),
-                _buildDrawerItem(Icons.class_rounded, 'My Classes', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage()));
-                }),
-                _buildDrawerItem(Icons.how_to_reg_rounded, 'Attendance', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => AttendancePage()));
-                }),
-                _buildDrawerItem(Icons.notifications_none_rounded, 'Notices', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NoticePage()));
-                }),
-                _buildDrawerItem(Icons.book_rounded, 'Homework', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomeworkPage()));
-                }),
-                _buildDrawerItem(Icons.event_note_rounded, 'Timetable', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => TimetablePage()));
-                }),
-                _buildDrawerItem(Icons.assignment_rounded, 'Marks Entry', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => MarksEntryPage()));
-                }),
-                _buildDrawerItem(Icons.beach_access_rounded, 'Leaves', false, () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LeavePage()));
-                }),
-                _buildDrawerItem(Icons.person_outline_rounded, 'Profile', false, () {
-                   Navigator.pop(context);
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
-                }),
-                const Divider(),
-                _buildDrawerItem(Icons.logout_rounded, 'Logout', false, _handleLogout),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(IconData icon, String title, bool selected, VoidCallback onTap) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          color: selected ? colorScheme.primary : colorScheme.onSurface,
-        ),
-      ),
-      onTap: onTap,
-      selected: selected,
     );
   }
 

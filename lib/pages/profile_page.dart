@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../widgets/app_drawer.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -229,6 +230,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
+      drawer: const AppDrawer(currentRoute: 'Profile'),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())

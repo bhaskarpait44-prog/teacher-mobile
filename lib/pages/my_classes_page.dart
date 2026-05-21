@@ -231,7 +231,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       final attendanceRes = results[1];
       final subjectsRes = results[2];
 
-      if (studentsRes.statusCode == 200) {
+      if (studentsRes.statusCode == 200 && attendanceRes.statusCode == 200 && subjectsRes.statusCode == 200) {
         final studentsData = jsonDecode(studentsRes.body);
         final attendanceData = jsonDecode(attendanceRes.body);
         final subjectsData = jsonDecode(subjectsRes.body);
@@ -249,13 +249,10 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
         final List<Map<String, dynamic>> classSubjects = [];
         
         for (var exam in exams) {
-          final List subjects = exam['subjects'] ?? [];
-          for (var s in subjects) {
-            if (s['class_id'] == widget.classId && s['section_id'] == widget.sectionId) {
-              if (!uniqueSubjects.contains(s['subject_name'])) {
-                uniqueSubjects.add(s['subject_name']);
-                classSubjects.add(s);
-              }
+          if (exam['class_id'] == widget.classId && exam['section_id'] == widget.sectionId) {
+            if (!uniqueSubjects.contains(exam['subject_name'])) {
+              uniqueSubjects.add(exam['subject_name']);
+              classSubjects.add(exam);
             }
           }
         }
@@ -268,7 +265,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
         });
       } else {
         setState(() {
-          _errorMessage = 'Failed to load class data';
+          _errorMessage = 'Failed to load class data. Status: ${studentsRes.statusCode}/${attendanceRes.statusCode}/${subjectsRes.statusCode}';
           _isLoading = false;
         });
       }
@@ -511,8 +508,8 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
 
         setState(() {
           _studentProfile = profileData['data'];
-          _attendanceRecords = attendanceData['data'] ?? [];
-          _examResults = resultsData['data'] ?? [];
+          _attendanceRecords = attendanceData['data']['attendance'] ?? [];
+          _examResults = resultsData['data']['results'] ?? [];
           _isLoading = false;
         });
       } else {
@@ -654,9 +651,9 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final result = _examResults[index];
-        final marks = double.tryParse(result['marks']?.toString() ?? '0') ?? 0;
+        final marks = double.tryParse(result['marks_obtained']?.toString() ?? '0') ?? 0;
         final maxMarks = double.tryParse(result['max_marks']?.toString() ?? '100') ?? 100;
-        final percentage = (marks / maxMarks) * 100;
+        final percentage = maxMarks > 0 ? (marks / maxMarks) * 100 : 0.0;
 
         return ListTile(
           title: Text(result['subject_name'] ?? 'Subject'),

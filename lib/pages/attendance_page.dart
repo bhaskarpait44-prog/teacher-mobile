@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../widgets/app_drawer.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -85,6 +86,7 @@ class _AttendancePageState extends State<AttendancePage> {
           ),
         ],
       ),
+      drawer: const AppDrawer(currentRoute: 'Attendance'),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchAttendanceStatus,
@@ -272,6 +274,41 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     }
   }
 
+  Future<void> _showSuccessAnimation() async {
+    return showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: ScaleTransition(
+            scale: CurvedAnimation(parent: anim1, curve: Curves.elasticOut),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  )
+                ],
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.green,
+                size: 80,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submitAttendance() async {
     if (!widget.isClassTeacher) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -315,10 +352,15 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
 
       if (response.statusCode == 200) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Attendance saved successfully'), backgroundColor: Colors.green),
-          );
-          Navigator.pop(context);
+          // Show success animation
+          _showSuccessAnimation();
+          
+          // Wait for animation and close
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+            Navigator.pop(context); // Go back to attendance status
+          }
         }
       } else {
         final data = jsonDecode(response.body);
