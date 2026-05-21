@@ -45,8 +45,14 @@ class NoticeProvider with ChangeNotifier {
   Future<void> markAsRead(String token, String noticeId) async {
     try {
       final response = await http.post(
+<<<<<<< HEAD
         Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$noticeId/read'),
         headers: {          'Content-Type': 'application/json',
+=======
+        Uri.parse('${ApiConstants.baseUrl}/notices/$noticeId/teacher/read'),
+        headers: {
+          'Content-Type': 'application/json',
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
           'Authorization': 'Bearer $token',
         },
       );

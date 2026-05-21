@@ -44,7 +44,18 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text,
       );
 
+<<<<<<< HEAD
       // No manual navigation here. AuthWrapper will rebuild and show PinSetupPage if no PIN is set.
+=======
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WelcomePage(name: authProvider.user?['name'] ?? 'Teacher'),
+          ),
+        );
+      }
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
     } catch (e) {
       if (mounted) {
         setState(() {

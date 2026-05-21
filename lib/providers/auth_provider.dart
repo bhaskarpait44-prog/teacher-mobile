@@ -9,15 +9,21 @@ class AuthProvider with ChangeNotifier {
   String? _token;
   Map<String, dynamic>? _user;
   bool _isLoading = true;
+<<<<<<< HEAD
   bool _isPinAuthenticated = false;
   String? _storedPin;
+=======
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
 
   String? get token => _token;
   Map<String, dynamic>? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _token != null && _user != null;
+<<<<<<< HEAD
   bool get hasPin => _storedPin != null;
   bool get isPinAuthenticated => _isPinAuthenticated;
+=======
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
 
   AuthProvider() {
     init();
@@ -29,7 +35,10 @@ class AuthProvider with ChangeNotifier {
     if (userStr != null) {
       _user = jsonDecode(userStr);
     }
+<<<<<<< HEAD
     _storedPin = await _storage.read(key: 'user_pin');
+=======
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
     _isLoading = false;
     notifyListeners();
   }
@@ -64,6 +73,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+<<<<<<< HEAD
   Future<void> setPin(String pin) async {
     await _storage.write(key: 'user_pin', value: pin);
     _storedPin = pin;
@@ -93,6 +103,12 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     _storedPin = null;
     _isPinAuthenticated = false;
+=======
+  Future<void> logout() async {
+    await _storage.deleteAll();
+    _token = null;
+    _user = null;
+>>>>>>> f9835467cd57a4b297b1a24a85eeaa4e2fae862c
     notifyListeners();
   }
 }
