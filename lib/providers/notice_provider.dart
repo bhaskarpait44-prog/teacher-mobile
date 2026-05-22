@@ -66,4 +66,25 @@ class NoticeProvider with ChangeNotifier {
       debugPrint('Error marking notice as read: $e');
     }
   }
+
+  Future<bool> deleteNotice(String token, String noticeId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$noticeId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _notices.removeWhere((n) => n['id'].toString() == noticeId);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error deleting notice: $e');
+    }
+    return false;
+  }
 }

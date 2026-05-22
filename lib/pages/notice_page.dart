@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
+import 'create_notice_page.dart';
 
 class NoticePage extends StatefulWidget {
   const NoticePage({super.key});
@@ -107,6 +108,18 @@ class _NoticePageState extends State<NoticePage> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateNoticePage()),
+          );
+          if (result == true) {
+            _fetchNotices();
+          }
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
@@ -181,6 +194,13 @@ class _NoticeCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
+                  if (notice['can_manage'] == true)
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
+                      onPressed: () => _confirmDelete(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -221,6 +241,35 @@ class _NoticeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Notice'),
+        content: const Text('Are you sure you want to delete this notice?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final noticeProvider = Provider.of<NoticeProvider>(context, listen: false);
+      if (authProvider.token != null) {
+        final success = await noticeProvider.deleteNotice(authProvider.token!, notice['id'].toString());
+        if (success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notice deleted')));
+        }
+      }
+    }
   }
 
   void _showNoticeDetails(BuildContext context) {
