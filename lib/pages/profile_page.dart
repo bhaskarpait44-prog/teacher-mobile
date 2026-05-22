@@ -225,10 +225,41 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Provider.of<AuthProvider>(context, listen: false).logout();
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _showLogoutConfirmation,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -256,6 +287,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           _buildCorrectionRequest(),
                           const SizedBox(height: 32),
                           _buildCorrectionHistory(),
+                          const SizedBox(height: 40),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _showLogoutConfirmation,
+                              icon: const Icon(Icons.logout, color: Colors.red),
+                              label: const Text('Logout', style: TextStyle(color: Colors.red)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                side: const BorderSide(color: Colors.red),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 40),
                         ],
                       ),

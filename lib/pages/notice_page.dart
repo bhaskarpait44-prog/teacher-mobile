@@ -293,7 +293,11 @@ class _NoticeCard extends StatelessWidget {
     final noticeProvider = Provider.of<NoticeProvider>(context, listen: false);
     
     if (notice['is_read'] == false && authProvider.token != null) {
-      noticeProvider.markAsRead(authProvider.token!, notice['id'].toString());
+      noticeProvider.markAsRead(
+        authProvider.token!, 
+        notice['id'].toString(),
+        source: notice['source'] ?? 'unified',
+      );
     }
 
     showModalBottomSheet(

@@ -44,7 +44,7 @@ class NoticeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> markAsRead(String token, String noticeId) async {
+  Future<void> markAsRead(String token, String noticeId, {String source = 'unified'}) async {
     final index = _notices.indexWhere((n) => n['id'].toString() == noticeId);
     if (index == -1 || _notices[index]['is_read'] == true) return;
 
@@ -56,7 +56,7 @@ class NoticeProvider with ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$noticeId/read'),
+        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$noticeId/read?source=$source'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -90,6 +90,7 @@ class NoticeProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         _notices.removeWhere((n) => n['id'].toString() == noticeId);
+        _unreadCount = _notices.where((n) => n['is_read'] == false).length;
         notifyListeners();
         return true;
       }
@@ -100,8 +101,8 @@ class NoticeProvider with ChangeNotifier {
   }
 
   Future<void> markAllAsRead(String token) async {
-    final unreadIds = _notices.where((n) => n['is_read'] == false).map((n) => n['id'].toString()).toList();
-    if (unreadIds.isEmpty) return;
+    final unreadNotices = _notices.where((n) => n['is_read'] == false).toList();
+    if (unreadNotices.isEmpty) return;
 
     // Optimistic update
     final originalNotices = jsonDecode(jsonEncode(_notices));
@@ -112,12 +113,8 @@ class NoticeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // The backend doesn't have a bulk mark-read yet, so we'll do them in parallel
-      // but only for the first few to avoid overloading, or better, just rely on local state
-      // and let the backend catch up eventually. 
-      // For now, we'll call the API for each.
-      await Future.wait(unreadIds.map((id) => http.post(
-        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$id/read'),
+      await Future.wait(unreadNotices.map((n) => http.post(
+        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/${n['id']}/read?source=${n['source'] ?? 'unified'}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

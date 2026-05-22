@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
@@ -39,6 +40,29 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _registerPushToken();
+    _setupNotificationListener();
+  }
+
+  void _setupNotificationListener() {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotificationTap(message.data);
+    });
+
+    // Check if the app was opened from a terminated state via notification
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationTap(message.data);
+      }
+    });
+  }
+
+  void _handleNotificationTap(Map<String, dynamic> data) {
+    if (data['type'] == 'leave_status') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LeavePage()),
+      );
+    }
   }
 
   void _registerPushToken() {
