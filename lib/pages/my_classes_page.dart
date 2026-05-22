@@ -150,6 +150,20 @@ class _MyClassesPageState extends State<MyClassesPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
+                  if (item['subject_name'] != null)
+                    Text(
+                      item['subject_name'],
+                      style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.w500),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else if (item['is_class_teacher'] == true)
+                    const Text(
+                      'Class Teacher',
+                      style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  const SizedBox(height: 4),
                   Text(
                     '${item['student_count'] ?? 0} Students',
                     style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
