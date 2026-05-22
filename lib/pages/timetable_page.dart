@@ -6,7 +6,6 @@ import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
-import '../widgets/app_drawer.dart';
 
 class TimetablePage extends StatefulWidget {
   const TimetablePage({super.key});
@@ -161,7 +160,6 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
           ),
         ),
       ),
-      drawer: const AppDrawer(currentRoute: 'Timetable'),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null

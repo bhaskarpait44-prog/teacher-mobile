@@ -5,7 +5,6 @@ import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
-import '../widgets/app_drawer.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -86,7 +85,6 @@ class _AttendancePageState extends State<AttendancePage> {
           ),
         ],
       ),
-      drawer: const AppDrawer(currentRoute: 'Attendance'),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchAttendanceStatus,
@@ -249,7 +247,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
             _requiresReason = data['data']['requires_reason'] ?? false;
             _isHoliday = data['data']['is_holiday'] ?? false;
             _holidayName = data['data']['holiday']?['name'];
-            
+
             for (var student in _students) {
               _attendance[student['enrollment_id']] = student['status'] ?? 'present';
             }
@@ -259,7 +257,11 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Failed to load students';
+            if (response.statusCode == 403) {
+              _errorMessage = 'Only the assigned class teacher is eligible to mark or edit attendance.';
+            } else {
+              _errorMessage = 'Failed to load students';
+            }
             _isLoading = false;
           });
         }
@@ -329,7 +331,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
-      
+
       final records = _attendance.entries.map((e) => {
         'enrollment_id': e.key,
         'status': e.value,
@@ -354,7 +356,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
         if (mounted) {
           // Show success animation
           _showSuccessAnimation();
-          
+
           // Wait for animation and close
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) {
@@ -388,99 +390,123 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       appBar: AppBar(
         title: Text('${widget.className} - ${widget.sectionName}'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month_rounded),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                lastDate: DateTime.now(),
-              );
-              if (picked != null) {
-                setState(() => _selectedDate = picked);
-                _fetchStudents();
-              }
-            },
-          ),
+          if (widget.isClassTeacher)
+            IconButton(
+              icon: const Icon(Icons.calendar_month_rounded),
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) {
+                  setState(() => _selectedDate = picked);
+                  _fetchStudents();
+                }
+              },
+            ),
         ],
       ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  if (!widget.isClassTeacher)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      color: Colors.red.withOpacity(0.1),
-                      child: const Row(
+            : !widget.isClassTeacher
+                ? _buildUnauthorizedView()
+                : _errorMessage != null
+                    ? _buildErrorView()
+                    : Column(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.red),
-                          const SizedBox(width: 8),
+                          _buildHeader(),
+                          if (_isHoliday)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              color: colorScheme.surfaceVariant,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline, color: Colors.blue),
+                                  const SizedBox(width: 8),
+                                  Text('Holiday: $_holidayName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                                ],
+                              ),
+                            ),
+                          if (_requiresReason)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: TextField(
+                                controller: _reasonController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Reason for marking/editing',
+                                  prefixIcon: Icon(Icons.comment_rounded),
+                                ),
+                              ),
+                            ),
                           Expanded(
-                            child: Text(
-                              'Only the assigned class teacher is eligible to mark or edit attendance.',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 13),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.only(bottom: 100),
+                              itemCount: _students.length,
+                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final student = _students[index];
+                                final firstName = student['first_name'] ?? '';
+                                final enrollmentId = student['enrollment_id'];
+                                final status = _attendance[enrollmentId];
+
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
+                                  ),
+                                  title: Text('${student['first_name']} ${student['last_name']}'),
+                                  subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
+                                  trailing: _buildStatusChip(enrollmentId, status),
+                                );
+                              },
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  _buildHeader(),
-                  if (_isHoliday)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      color: colorScheme.surfaceVariant,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text('Holiday: $_holidayName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                        ],
-                      ),
-                    ),
-                  if (_requiresReason)
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: TextField(
-                        controller: _reasonController,
-                        decoration: const InputDecoration(
-                          labelText: 'Reason for marking/editing',
-                          prefixIcon: Icon(Icons.comment_rounded),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: _errorMessage != null
-                        ? Center(child: Text(_errorMessage!))
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 100),
-                            itemCount: _students.length,
-                            separatorBuilder: (context, index) => const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final student = _students[index];
-                              final firstName = student['first_name'] ?? '';
-                              final enrollmentId = student['enrollment_id'];
-                              final status = _attendance[enrollmentId];
-  
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
-                                ),
-                                title: Text('${student['first_name']} ${student['last_name']}'),
-                                subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
-                                trailing: _buildStatusChip(enrollmentId, status),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
       ),
-      bottomSheet: _isLoading || _errorMessage != null ? null : _buildBottomBar(),
+      bottomSheet: _isLoading || _errorMessage != null || !widget.isClassTeacher ? null : _buildBottomBar(),
+    );
+  }
+
+  Widget _buildUnauthorizedView() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline_rounded, size: 64, color: colorScheme.primary),
+            const SizedBox(height: 16),
+            const Text(
+              'Only the assigned class teacher is eligible to mark or edit attendance.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(_errorMessage!, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          ElevatedButton(onPressed: _fetchStudents, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 
