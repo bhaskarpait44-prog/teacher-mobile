@@ -32,9 +32,11 @@ class NoticeProvider with ChangeNotifier {
         final data = jsonDecode(response.body);
         _notices = data['data']['notices'] ?? [];
         _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+      } else {
+        _error = 'Failed to load notices (Status: ${response.statusCode})';
       }
     } catch (e) {
-      _error = 'Failed to load notices. Please try again.';
+      _error = 'An error occurred while fetching notices. Please check your connection.';
       debugPrint('Error fetching notices: $e');
     } finally {
       _isLoading = false;

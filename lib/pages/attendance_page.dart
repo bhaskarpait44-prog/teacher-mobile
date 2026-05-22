@@ -130,18 +130,25 @@ class _AttendancePageState extends State<AttendancePage> {
         final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: (isFullyMarked ? Colors.green : Colors.orange).withOpacity(0.1),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (isFullyMarked ? Colors.green : Colors.orange).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Icon(
-                isFullyMarked ? Icons.check_circle : Icons.pending,
+                Icons.groups_rounded,
                 color: isFullyMarked ? Colors.green : Colors.orange,
+                size: 28,
               ),
             ),
             title: Text(
               '${item['class_name']} ${item['section_name']}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,7 +474,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                         ],
                       ),
       ),
-      bottomSheet: _isLoading || _errorMessage != null || !widget.isClassTeacher ? null : _buildBottomBar(),
+      bottomNavigationBar: _isLoading || _errorMessage != null || !widget.isClassTeacher ? null : _buildBottomBar(),
     );
   }
 
@@ -594,13 +601,21 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
-      child: ElevatedButton(
-        onPressed: _isSaving ? null : _submitAttendance,
-        child: _isSaving
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text('Save Attendance'),
+      child: SafeArea(
+        child: ElevatedButton(
+          onPressed: _isSaving ? null : _submitAttendance,
+          child: _isSaving
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text('Save Attendance'),
+        ),
       ),
     );
   }
