@@ -222,7 +222,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       final results = await Future.wait([
         http.get(Uri.parse('$baseUrl/teacher/students?class_id=${widget.classId}&section_id=${widget.sectionId}'), headers: headers),
         http.get(Uri.parse('$baseUrl/teacher/attendance/status'), headers: headers),
-        http.get(Uri.parse('$baseUrl/teacher/marks/exams'), headers: headers),
+        http.get(Uri.parse('$baseUrl/classes/${widget.classId}/subjects'), headers: headers),
       ]);
 
       if (!mounted) return;
@@ -231,41 +231,36 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       final attendanceRes = results[1];
       final subjectsRes = results[2];
 
-      if (studentsRes.statusCode == 200 && attendanceRes.statusCode == 200 && subjectsRes.statusCode == 200) {
+      if (studentsRes.statusCode == 200) {
         final studentsData = jsonDecode(studentsRes.body);
-        final attendanceData = jsonDecode(attendanceRes.body);
-        final subjectsData = jsonDecode(subjectsRes.body);
-
-        // Find attendance for this class
-        final List classes = attendanceData['data']['classes'] ?? [];
-        final myAtt = classes.firstWhere(
-          (c) => c['class_id'] == widget.classId && c['section_id'] == widget.sectionId,
-          orElse: () => null,
-        );
-
-        // Extract subjects for this class
-        final List exams = subjectsData['data']['exams'] ?? [];
-        final Set<String> uniqueSubjects = {};
-        final List<Map<String, dynamic>> classSubjects = [];
         
-        for (var exam in exams) {
-          if (exam['class_id'] == widget.classId && exam['section_id'] == widget.sectionId) {
-            if (!uniqueSubjects.contains(exam['subject_name'])) {
-              uniqueSubjects.add(exam['subject_name']);
-              classSubjects.add(exam);
-            }
-          }
+        // Attendance Data
+        Map<String, dynamic>? myAtt;
+        if (attendanceRes.statusCode == 200) {
+          final attendanceData = jsonDecode(attendanceRes.body);
+          final List classes = attendanceData['data']['classes'] ?? [];
+          myAtt = classes.firstWhere(
+            (c) => c['class_id'] == widget.classId && c['section_id'] == widget.sectionId,
+            orElse: () => null,
+          );
+        }
+
+        // Subjects Data
+        List<dynamic> subjects = [];
+        if (subjectsRes.statusCode == 200) {
+          final subjectsData = jsonDecode(subjectsRes.body);
+          subjects = subjectsData['data'] ?? [];
         }
 
         setState(() {
           _students = studentsData['data']['students'] ?? [];
           _attendanceSummary = myAtt;
-          _subjects = classSubjects;
+          _subjects = subjects;
           _isLoading = false;
         });
       } else {
         setState(() {
-          _errorMessage = 'Failed to load class data. Status: ${studentsRes.statusCode}/${attendanceRes.statusCode}/${subjectsRes.statusCode}';
+          _errorMessage = 'Failed to load class students. (Status: ${studentsRes.statusCode})';
           _isLoading = false;
         });
       }
@@ -423,11 +418,12 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       itemCount: _subjects.length,
       itemBuilder: (context, index) {
         final s = _subjects[index];
+        final code = s['code'] != null ? ' (${s['code']})' : '';
         return Card(
           child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.book_outlined)),
-            title: Text(s['subject_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Regular Subject'),
+            title: Text('${s['name']}$code', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(s['is_core'] == true ? 'Core Subject' : 'Elective Subject'),
           ),
         );
       },
