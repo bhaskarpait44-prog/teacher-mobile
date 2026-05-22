@@ -9,7 +9,8 @@ import '../pages/timetable_page.dart';
 import '../pages/marks_entry_page.dart';
 import '../pages/leave_page.dart';
 import '../pages/profile_page.dart';
-import '../pages/login_page.dart';
+import '../pages/leave_page.dart';
+import '../utils/helpers.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;
@@ -43,8 +44,8 @@ class AppDrawer extends StatelessWidget {
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: Text(
-                name.isNotEmpty ? name[0] : 'T',
-                style: TextStyle(fontSize: 32, color: colorScheme.primary, fontWeight: FontWeight.bold),
+                getInitials(name),
+                style: TextStyle(fontSize: 24, color: colorScheme.primary, fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -462,7 +462,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
 
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
+                                    child: Text(getInitials('${student['first_name']} ${student['last_name']}')),
                                   ),
                                   title: Text('${student['first_name']} ${student['last_name']}'),
                                   subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),

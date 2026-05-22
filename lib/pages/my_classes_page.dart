@@ -315,7 +315,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
         final name = '${student['first_name']} ${student['last_name']}';
         return ListTile(
           leading: CircleAvatar(
-            child: Text(firstName.isNotEmpty ? firstName[0] : 'S'),
+            child: Text(getInitials(name)),
           ),
           title: Text(name),
           subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
@@ -577,7 +577,7 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
                 radius: 30,
-                child: Text(_studentProfile!['first_name'][0], style: const TextStyle(fontSize: 24)),
+                child: Text(getInitials('${_studentProfile!['first_name']} ${_studentProfile!['last_name']}'), style: const TextStyle(fontSize: 24)),
               ),
               title: Text(
                 '${_studentProfile!['first_name']} ${_studentProfile!['last_name']}',

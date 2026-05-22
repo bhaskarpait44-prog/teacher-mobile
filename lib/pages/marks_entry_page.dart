@@ -417,7 +417,7 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
                         final student = _students[index];
                         final id = student['enrollment_id'];
                         return ListTile(
-                          leading: CircleAvatar(child: Text(student['first_name'][0])),
+                          leading: CircleAvatar(child: Text(getInitials('${student['first_name']} ${student['last_name']}'))),
                           title: Text('${student['first_name']} ${student['last_name']}'),
                           subtitle: Text('Roll: ${student['roll_number'] ?? 'N/A'}'),
                           trailing: SizedBox(

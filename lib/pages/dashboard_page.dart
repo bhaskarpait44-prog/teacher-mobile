@@ -192,12 +192,24 @@ class _DashboardHomeState extends State<DashboardHome> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final name = authProvider.user?['name'] ?? 'Teacher';
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.person_outline_rounded),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
+            child: CircleAvatar(
+              backgroundColor: colorScheme.primary,
+              child: Text(
+                getInitials(name),
+                style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
         ),
         title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
@@ -290,7 +302,10 @@ class _DashboardHomeState extends State<DashboardHome> {
     final upcomingExams = _dashboardData?['upcoming_exams'] as List?;
 
     return RefreshIndicator(
-      onRefresh: _fetchDashboardData,
+      onRefresh: () async {
+        await _fetchDashboardData();
+        _fetchNotices();
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20.0),

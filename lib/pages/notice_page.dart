@@ -36,6 +36,21 @@ class _NoticePageState extends State<NoticePage> {
       appBar: AppBar(
         title: const Text('Notices'),
         actions: [
+          Consumer<NoticeProvider>(
+            builder: (context, provider, _) {
+              if (provider.unreadCount > 0) {
+                return IconButton(
+                  icon: const Icon(Icons.done_all_rounded),
+                  tooltip: 'Mark all as read',
+                  onPressed: () {
+                    final token = Provider.of<AuthProvider>(context, listen: false).token;
+                    if (token != null) provider.markAllAsRead(token);
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _fetchNotices,

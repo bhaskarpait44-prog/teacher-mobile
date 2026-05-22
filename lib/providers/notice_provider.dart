@@ -45,6 +45,15 @@ class NoticeProvider with ChangeNotifier {
   }
 
   Future<void> markAsRead(String token, String noticeId) async {
+    final index = _notices.indexWhere((n) => n['id'].toString() == noticeId);
+    if (index == -1 || _notices[index]['is_read'] == true) return;
+
+    // Optimistic update
+    final originalState = _notices[index]['is_read'];
+    _notices[index]['is_read'] = true;
+    _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+    notifyListeners();
+
     try {
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$noticeId/read'),
@@ -54,17 +63,17 @@ class NoticeProvider with ChangeNotifier {
         },
       );
 
-      if (response.statusCode == 200) {
-        final index = _notices.indexWhere((n) => n['id'].toString() == noticeId);
-        if (index != -1) {
-          if (_notices[index]['is_read'] == false) {
-             _notices[index]['is_read'] = true;
-             _unreadCount = (_unreadCount - 1).clamp(0, 1000);
-             notifyListeners();
-          }
-        }
+      if (response.statusCode != 200) {
+        // Rollback on failure
+        _notices[index]['is_read'] = originalState;
+        _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+        notifyListeners();
       }
     } catch (e) {
+      // Rollback on error
+      _notices[index]['is_read'] = originalState;
+      _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+      notifyListeners();
       debugPrint('Error marking notice as read: $e');
     }
   }
@@ -88,5 +97,37 @@ class NoticeProvider with ChangeNotifier {
       debugPrint('Error deleting notice: $e');
     }
     return false;
+  }
+
+  Future<void> markAllAsRead(String token) async {
+    final unreadIds = _notices.where((n) => n['is_read'] == false).map((n) => n['id'].toString()).toList();
+    if (unreadIds.isEmpty) return;
+
+    // Optimistic update
+    final originalNotices = jsonDecode(jsonEncode(_notices));
+    for (var n in _notices) {
+      n['is_read'] = true;
+    }
+    _unreadCount = 0;
+    notifyListeners();
+
+    try {
+      // The backend doesn't have a bulk mark-read yet, so we'll do them in parallel
+      // but only for the first few to avoid overloading, or better, just rely on local state
+      // and let the backend catch up eventually. 
+      // For now, we'll call the API for each.
+      await Future.wait(unreadIds.map((id) => http.post(
+        Uri.parse('${ApiConstants.baseUrl}/notices/teacher/$id/read'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      )));
+    } catch (e) {
+      // Rollback on error
+      _notices = originalNotices;
+      _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+      notifyListeners();
+    }
   }
 }
