@@ -330,7 +330,7 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
               context,
               MaterialPageRoute(
                 builder: (context) => StudentDetailPage(
-                  studentId: student['enrollment_id'],
+                  studentId: student['id'],
                   studentName: name,
                 ),
               ),
@@ -480,41 +480,45 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
+      final headers = {'Authorization': 'Bearer $token'};
+      final baseUrl = ApiConstants.baseUrl;
 
-      // Fetch profile
-      final profileRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/students/${widget.studentId}'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      // Fetch attendance
-      final attendanceRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/students/${widget.studentId}/attendance'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      // Fetch results
-      final resultsRes = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/students/${widget.studentId}/results'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final results = await Future.wait([
+        http.get(Uri.parse('$baseUrl/teacher/students/${widget.studentId}'), headers: headers),
+        http.get(Uri.parse('$baseUrl/teacher/students/${widget.studentId}/attendance'), headers: headers),
+        http.get(Uri.parse('$baseUrl/teacher/students/${widget.studentId}/results'), headers: headers),
+      ]);
 
       if (!mounted) return;
 
+      final profileRes = results[0];
+      final attendanceRes = results[1];
+      final resultsRes = results[2];
+
       if (profileRes.statusCode == 200) {
         final profileData = jsonDecode(profileRes.body);
-        final attendanceData = jsonDecode(attendanceRes.body);
-        final resultsData = jsonDecode(resultsRes.body);
+        
+        List<dynamic> attendanceList = [];
+        if (attendanceRes.statusCode == 200) {
+          final attendanceData = jsonDecode(attendanceRes.body);
+          attendanceList = attendanceData['data']?['attendance'] ?? [];
+        }
+
+        List<dynamic> examResultsList = [];
+        if (resultsRes.statusCode == 200) {
+          final resultsData = jsonDecode(resultsRes.body);
+          examResultsList = resultsData['data']?['results'] ?? [];
+        }
 
         setState(() {
           _studentProfile = profileData['data'];
-          _attendanceRecords = attendanceData['data']['attendance'] ?? [];
-          _examResults = resultsData['data']['results'] ?? [];
+          _attendanceRecords = attendanceList;
+          _examResults = examResultsList;
           _isLoading = false;
         });
       } else {
         setState(() {
-          _errorMessage = 'Failed to load student details';
+          _errorMessage = 'Failed to load student details (Status: ${profileRes.statusCode})';
           _isLoading = false;
         });
       }
