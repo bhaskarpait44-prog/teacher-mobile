@@ -1,4 +1,7 @@
 class ApiConstants {
-  static const String baseUrl = 'http://10.137.4.32:5000/api';
-  static const String mediaUrl = 'http://10.137.4.32:5000';
+  // Change this to your PC's IP when working locally
+  static const String serverIp = '10.137.4.32'; 
+  
+  static const String baseUrl = 'http://$serverIp:5000/api';
+  static const String mediaUrl = 'http://$serverIp:5000';
 }
