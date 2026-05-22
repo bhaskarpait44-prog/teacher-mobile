@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/constants.dart';
+import '../utils/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final _storage = const FlutterSecureStorage();
@@ -30,6 +31,11 @@ class AuthProvider with ChangeNotifier {
       _user = jsonDecode(userStr);
     }
     _storedPin = await _storage.read(key: 'user_pin');
+    
+    if (_token != null) {
+      NotificationService.registerToken(_token!);
+    }
+
     _isLoading = false;
     notifyListeners();
   }
@@ -57,6 +63,8 @@ class AuthProvider with ChangeNotifier {
 
       await _storage.write(key: 'token', value: _token);
       await _storage.write(key: 'user', value: jsonEncode(_user));
+      
+      NotificationService.registerToken(_token!);
       
       notifyListeners();
     } else {
