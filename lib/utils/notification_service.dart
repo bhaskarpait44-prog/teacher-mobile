@@ -48,11 +48,18 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
-
-      if (message.notification != null) {
-        _showLocalNotification(message);
-      }
+      _showLocalNotification(message);
     });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('Notification tapped from background: ${message.data}');
+    });
+
+    // Handle notification tap when app was terminated
+    final RemoteMessage? initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('App opened from terminated via notification: ${initialMessage.data}');
+    }
   }
 
   static Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -67,10 +74,13 @@ class NotificationService {
     );
     const NotificationDetails details = NotificationDetails(android: androidDetails);
 
+    final title = message.notification?.title ?? message.data['title'] ?? 'New Notice';
+    final body = message.notification?.body ?? message.data['body'] ?? '';
+
     await _localNotifications.show(
       message.hashCode,
-      message.notification?.title,
-      message.notification?.body,
+      title,
+      body,
       details,
       payload: jsonEncode(message.data),
     );
