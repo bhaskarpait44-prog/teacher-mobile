@@ -565,31 +565,64 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   }
 
   Widget _buildStatusChip(int enrollmentId, String? status) {
-    return PopupMenuButton<String>(
-      enabled: widget.isClassTeacher,
-      onSelected: (val) {
-        setState(() => _attendance[enrollmentId] = val);
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: 'present', child: Text('Present')),
-        const PopupMenuItem(value: 'absent', child: Text('Absent')),
-        const PopupMenuItem(value: 'late', child: Text('Late')),
-        const PopupMenuItem(value: 'half_day', child: Text('Half Day')),
-      ],
-      child: Container(
+    if (!widget.isClassTeacher) {
+      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: getStatusColor(status, context).withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: getStatusColor(status, context).withOpacity(0.5)),
         ),
         child: Text(
           status?.toUpperCase() ?? 'N/A',
-          style: TextStyle(
-            color: getStatusColor(status, context),
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+          style: TextStyle(color: getStatusColor(status, context), fontWeight: FontWeight.bold, fontSize: 11),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildStatusButton(enrollmentId, 'present', status == 'present'),
+        const SizedBox(width: 4),
+        _buildStatusButton(enrollmentId, 'absent', status == 'absent'),
+        const SizedBox(width: 4),
+        _buildStatusButton(enrollmentId, 'late', status == 'late'),
+        const SizedBox(width: 4),
+        _buildStatusButton(enrollmentId, 'half_day', status == 'half_day'),
+      ],
+    );
+  }
+
+  Widget _buildStatusButton(int enrollmentId, String status, bool isSelected) {
+    final color = getStatusColor(status, context);
+    final label = status == 'half_day' ? 'HD' : status[0].toUpperCase();
+
+    return InkWell(
+      onTap: () => setState(() => _attendance[enrollmentId] = status),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isSelected ? color : color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? color : color.withOpacity(0.2),
+            width: 1.5,
           ),
+        ),
+        child: Center(
+          child: isSelected
+              ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+              : Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
         ),
       ),
     );

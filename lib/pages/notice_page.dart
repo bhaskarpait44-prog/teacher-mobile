@@ -15,6 +15,8 @@ class NoticePage extends StatefulWidget {
 }
 
 class _NoticePageState extends State<NoticePage> {
+  String _filter = 'all'; // all, unread, read, recent
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +32,23 @@ class _NoticePageState extends State<NoticePage> {
     }
   }
 
+  List<dynamic> _applyFilter(List<dynamic> notices) {
+    switch (_filter) {
+      case 'unread':
+        return notices.where((n) => n['is_read'] == false).toList();
+      case 'read':
+        return notices.where((n) => n['is_read'] == true).toList();
+      case 'recent':
+        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+        return notices.where((n) {
+          final date = DateTime.tryParse(n['created_at'] ?? '');
+          return date != null && date.isAfter(sevenDaysAgo);
+        }).toList();
+      default:
+        return notices;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,17 +57,14 @@ class _NoticePageState extends State<NoticePage> {
         actions: [
           Consumer<NoticeProvider>(
             builder: (context, provider, _) {
-              if (provider.unreadCount > 0) {
-                return IconButton(
-                  icon: const Icon(Icons.done_all_rounded),
-                  tooltip: 'Mark all as read',
-                  onPressed: () {
-                    final token = Provider.of<AuthProvider>(context, listen: false).token;
-                    if (token != null) provider.markAllAsRead(token);
-                  },
-                );
-              }
-              return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.done_all_rounded),
+                tooltip: 'Mark all as read',
+                onPressed: () {
+                  final token = Provider.of<AuthProvider>(context, listen: false).token;
+                  if (token != null) provider.markAllAsRead(token);
+                },
+              );
             },
           ),
           IconButton(
@@ -57,71 +73,42 @@ class _NoticePageState extends State<NoticePage> {
           ),
         ],
       ),
-      body: Consumer<NoticeProvider>(
-        builder: (context, noticeProvider, child) {
-          if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          _buildFilterBar(),
+          Expanded(
+            child: Consumer<NoticeProvider>(
+              builder: (context, noticeProvider, child) {
+                if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (noticeProvider.error != null && noticeProvider.notices.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, 
-                         color: Theme.of(context).colorScheme.error),
-                    const SizedBox(height: 16),
-                    Text(noticeProvider.error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        final token = Provider.of<AuthProvider>(
-                          context, listen: false).token;
-                        if (token != null) {
-                          Provider.of<NoticeProvider>(
-                            context, listen: false).fetchNotices(token);
-                        }
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+                if (noticeProvider.error != null && noticeProvider.notices.isEmpty) {
+                  return _buildErrorView(noticeProvider.error!);
+                }
 
-          if (noticeProvider.notices.isEmpty) {
-            final colorScheme = Theme.of(context).colorScheme;
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_off_outlined, size: 64, color: colorScheme.outline),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No notices found',
-                    style: TextStyle(fontSize: 18, color: colorScheme.onSurfaceVariant),
+                final filteredNotices = _applyFilter(noticeProvider.notices);
+
+                if (filteredNotices.isEmpty) {
+                  return _buildEmptyView();
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async => _fetchNotices(),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    itemCount: filteredNotices.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final notice = filteredNotices[index];
+                      return _NoticeCard(notice: notice);
+                    },
                   ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async => _fetchNotices(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: noticeProvider.notices.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final notice = noticeProvider.notices[index];
-                return _NoticeCard(notice: notice);
+                );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -134,6 +121,75 @@ class _NoticePageState extends State<NoticePage> {
           }
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _filterChip('All', 'all'),
+          _filterChip('Unread', 'unread'),
+          _filterChip('Read', 'read'),
+          _filterChip('Recent', 'recent'),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, String value) {
+    final isSelected = _filter == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) setState(() => _filter = value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorView(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 16),
+            Text(error, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchNotices,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 64, color: colorScheme.outline.withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text(
+            'No notices found for this filter.',
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }
@@ -150,34 +206,26 @@ class _NoticeCard extends StatelessWidget {
     final isRead = notice['is_read'] == true;
     final priority = notice['priority']?.toString().toLowerCase() ?? 'normal';
     final date = DateTime.tryParse(notice['created_at'] ?? '') ?? DateTime.now();
-    final formattedDate = DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+    final formattedDate = DateFormat('dd MMM').format(date);
 
-    Color priorityColor;
-    switch (priority) {
-      case 'urgent':
-        priorityColor = Colors.red;
-        break;
-      case 'info':
-        priorityColor = Colors.blue;
-        break;
-      default:
-        priorityColor = Colors.green;
-    }
+    final color = _getTypeColor(priority);
 
     return Card(
-      elevation: isRead ? 0 : 2,
+      margin: EdgeInsets.zero,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isRead ? colorScheme.outlineVariant : Colors.transparent,
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      color: colorScheme.surface,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _showNoticeDetails(context),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            border: !isRead 
+              ? Border(left: BorderSide(color: color, width: 4))
+              : null,
+          ),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,36 +234,31 @@ class _NoticeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: priorityColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       priority.toUpperCase(),
-                      style: TextStyle(
-                        color: priorityColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  if (!isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
+                  Row(
+                    children: [
+                      Text(
+                        formattedDate,
+                        style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
                       ),
-                    ),
-                  if (notice['can_manage'] == true)
-                    IconButton(
-                      icon: Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
-                      onPressed: () => _confirmDelete(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                      if (notice['can_manage'] == true) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _confirmDelete(context),
+                          child: Icon(Icons.delete_outline, color: colorScheme.error, size: 18),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -223,8 +266,8 @@ class _NoticeCard extends StatelessWidget {
                 notice['title'] ?? 'No Title',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                  color: isRead ? colorScheme.onSurfaceVariant : colorScheme.onSurface,
+                  fontWeight: !isRead ? FontWeight.bold : FontWeight.w500,
+                  color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
@@ -233,29 +276,33 @@ class _NoticeCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'By: ${notice['posted_by_name'] ?? 'Admin'}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-                  ),
-                ],
+              Text(
+                'By: ${notice['posted_by_name'] ?? 'Admin'}',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'academic':
+      case 'normal': return Colors.green;
+      case 'event':
+      case 'info': return Colors.blue;
+      case 'urgent':
+      case 'warning': return Colors.red;
+      case 'holiday': return Colors.orange;
+      default: return Colors.grey;
+    }
   }
 
   void _confirmDelete(BuildContext context) async {

@@ -9,7 +9,7 @@ import '../pages/timetable_page.dart';
 import '../pages/marks_entry_page.dart';
 import '../pages/leave_page.dart';
 import '../pages/profile_page.dart';
-import '../pages/leave_page.dart';
+import '../pages/login_page.dart';
 import '../utils/helpers.dart';
 
 class AppDrawer extends StatelessWidget {
