@@ -6,7 +6,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
-import '../utils/helpers.dart';
 
 class StudyMaterialPage extends StatefulWidget {
   const StudyMaterialPage({super.key});
@@ -302,7 +301,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
