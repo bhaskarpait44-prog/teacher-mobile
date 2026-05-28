@@ -18,6 +18,7 @@ import 'my_classes_page.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
 import 'notice_page.dart';
+import 'study_material_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -491,6 +492,13 @@ class _DashboardHomeState extends State<DashboardHome> {
           Icons.beach_access_rounded,
           Colors.purple,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LeavePage())),
+        ),
+        _buildStatCard(
+          'Study',
+          'Materials',
+          Icons.library_books_rounded,
+          Colors.teal,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudyMaterialPage())),
         ),
       ],
     );

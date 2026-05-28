@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -33,6 +35,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   DateTime? _expiryDate;
+  File? _selectedFile;
 
   @override
   void initState() {
@@ -133,6 +136,19 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
     } catch (_) {}
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedFile = File(result.files.single.path!);
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -155,24 +171,33 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final response = await http.post(
+      
+      var request = http.MultipartRequest(
+        'POST',
         Uri.parse('${ApiConstants.baseUrl}/notices/teacher'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${authProvider.token}',
-        },
-        body: jsonEncode({
-          'title': _titleController.text.trim(),
-          'body': _bodyController.text.trim(),
-          'audience': _selectedAudience,
-          'target_class_id': _selectedClassId,
-          'target_section_id': _selectedSectionId,
-          'target_subject_id': _selectedSubjectId,
-          'target_student_id': _selectedStudentId,
-          'priority': _selectedPriority,
-          'expires_at': _expiryDate?.toIso8601String(),
-        }),
       );
+      
+      request.headers['Authorization'] = 'Bearer ${authProvider.token}';
+      
+      request.fields['title'] = _titleController.text.trim();
+      request.fields['body'] = _bodyController.text.trim();
+      request.fields['audience'] = _selectedAudience;
+      request.fields['target_class_id'] = _selectedClassId.toString();
+      request.fields['target_section_id'] = _selectedSectionId.toString();
+      if (_selectedSubjectId != null) request.fields['target_subject_id'] = _selectedSubjectId.toString();
+      if (_selectedStudentId != null) request.fields['target_student_id'] = _selectedStudentId.toString();
+      request.fields['priority'] = _selectedPriority;
+      if (_expiryDate != null) request.fields['expires_at'] = _expiryDate!.toIso8601String();
+
+      if (_selectedFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'attachment',
+          _selectedFile!.path,
+        ));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         if (mounted) {
@@ -295,6 +320,17 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                       if (picked != null) setState(() => _expiryDate = picked);
                     },
                   ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.attach_file),
+                    label: Text(_selectedFile == null ? 'Attach PDF' : 'Change PDF: ${_selectedFile!.path.split('/').last}'),
+                  ),
+                  if (_selectedFile != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text('Selected: ${_selectedFile!.path.split('/').last}', style: const TextStyle(fontSize: 12, color: Colors.green)),
+                    ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: _isSubmitting ? null : _submit,

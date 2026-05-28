@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -323,6 +325,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   final _maxMarksController = TextEditingController();
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   String _submissionType = 'online';
+  File? _selectedFile;
 
   bool get _isEditing => widget.homework != null;
 
@@ -441,6 +444,19 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
     _fetchSubjects();
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedFile = File(result.files.single.path!);
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _selectedSubjectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
@@ -457,25 +473,33 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
         ? '${ApiConstants.baseUrl}/teacher/homework/${widget.homework!['id']}'
         : '${ApiConstants.baseUrl}/teacher/homework';
       
-      final method = _isEditing ? http.patch : http.post;
-
-      final response = await method(
+      var request = http.MultipartRequest(
+        _isEditing ? 'PATCH' : 'POST',
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'class_id': _selectedClassId,
-          'section_id': _selectedSectionId,
-          'subject_id': _selectedSubjectId,
-          'title': _titleController.text.trim(),
-          'description': _descController.text.trim(),
-          'due_date': _dueDate.toIso8601String().split('T')[0],
-          'submission_type': _submissionType,
-          'max_marks': _maxMarksController.text.isNotEmpty ? double.tryParse(_maxMarksController.text) : null,
-        }),
       );
+      
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.fields['class_id'] = _selectedClassId.toString();
+      request.fields['section_id'] = _selectedSectionId.toString();
+      request.fields['subject_id'] = _selectedSubjectId.toString();
+      request.fields['title'] = _titleController.text.trim();
+      request.fields['description'] = _descController.text.trim();
+      request.fields['due_date'] = _dueDate.toIso8601String().split('T')[0];
+      request.fields['submission_type'] = _submissionType;
+      if (_maxMarksController.text.isNotEmpty) {
+        request.fields['max_marks'] = _maxMarksController.text;
+      }
+
+      if (_selectedFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'attachment',
+          _selectedFile!.path,
+        ));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         if (mounted) {
@@ -604,6 +628,17 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                         ],
                         onChanged: (val) => setState(() => _submissionType = val!),
                       ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: _pickFile,
+                        icon: const Icon(Icons.attach_file),
+                        label: Text(_selectedFile == null ? 'Attach PDF' : 'Change PDF: ${_selectedFile!.path.split('/').last}'),
+                      ),
+                      if (_selectedFile != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text('Selected: ${_selectedFile!.path.split('/').last}', style: const TextStyle(fontSize: 12, color: Colors.green)),
+                        ),
                       const SizedBox(height: 32),
                       ElevatedButton(
                         onPressed: _isLoading ? null : _submit,
