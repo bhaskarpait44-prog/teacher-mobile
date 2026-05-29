@@ -323,8 +323,17 @@ class _DashboardHomeState extends State<DashboardHome> {
     final teacher = _dashboardData?['teacher'];
     final glance = _dashboardData?['today_at_a_glance'];
     final schedule = _dashboardData?['today_schedule'] as List?;
-    final myClasses = _dashboardData?['my_class'] as List?;
+    final myClasses = _dashboardData?['my_class'] as List? ?? [];
+    final subjectClasses = _dashboardData?['subject_classes'] as List? ?? [];
     final upcomingExams = _dashboardData?['upcoming_exams'] as List?;
+
+    final seen = <String>{};
+    final uniqueClasses = [...myClasses, ...subjectClasses].where((c) {
+      final key = '${c['class_id']}-${c['section_id']}';
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -339,7 +348,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             _buildWelcomeHeader(teacher?['name'] ?? 'Teacher'),
             const SizedBox(height: 24),
-            _buildStatGrid(glance, myClasses),
+            _buildStatGrid(glance, uniqueClasses),
             const SizedBox(height: 32),
             _buildSectionHeader('Today\'s Schedule', () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
@@ -451,8 +460,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildStatGrid(Map<String, dynamic>? glance, List? myClasses) {
-    final classes = glance?['todays_classes'];
+  Widget _buildStatGrid(Map<String, dynamic>? glance, List? classesList) {
     final attendance = glance?['attendance_status'];
     final pendingData = glance?['pending_marks'];
     final pending = (pendingData is Map) ? (pendingData['pending_exams'] ?? 0) : (pendingData ?? 0);
@@ -467,7 +475,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       children: [
         _buildStatCard(
           'My Classes',
-          '${myClasses?.length ?? 0} classes',
+          '${classesList?.length ?? 0} classes',
           Icons.class_,
           Colors.blue,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MyClassesPage())),

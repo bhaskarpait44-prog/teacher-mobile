@@ -25,7 +25,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
   List<dynamic> _subjects = [];
   List<dynamic> _students = [];
   
-  String _selectedAudience = 'class'; // 'class', 'section', 'student', 'subject_wise'
+  String _selectedAudience = 'class'; // 'class', 'section', 'students', 'subject_wise'
   int? _selectedClassId;
   int? _selectedSectionId;
   int? _selectedSubjectId;
@@ -101,7 +101,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
     });
     
     if (_selectedAudience == 'subject_wise') _fetchSubjects();
-    if (_selectedAudience == 'student') _fetchStudents();
+    if (_selectedAudience == 'students') _fetchStudents();
   }
 
   void _fetchSubjects() {
@@ -162,7 +162,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
       return;
     }
 
-    if (_selectedAudience == 'student' && _selectedStudentId == null) {
+    if (_selectedAudience == 'students' && _selectedStudentId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a student')));
       return;
     }
@@ -185,7 +185,9 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
       request.fields['target_class_id'] = _selectedClassId.toString();
       request.fields['target_section_id'] = _selectedSectionId.toString();
       if (_selectedSubjectId != null) request.fields['target_subject_id'] = _selectedSubjectId.toString();
-      if (_selectedStudentId != null) request.fields['target_student_id'] = _selectedStudentId.toString();
+      if (_selectedAudience == 'students' && _selectedStudentId != null) {
+        request.fields['target_student_id'] = _selectedStudentId.toString();
+      }
       request.fields['priority'] = _selectedPriority;
       if (_expiryDate != null) request.fields['expires_at'] = _expiryDate!.toIso8601String();
 
@@ -235,7 +237,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                       DropdownMenuItem(value: 'class', child: Text('Whole Class')),
                       DropdownMenuItem(value: 'section', child: Text('Specific Section')),
                       DropdownMenuItem(value: 'subject_wise', child: Text('Subject Wise')),
-                      DropdownMenuItem(value: 'student', child: Text('Specific Student')),
+                      DropdownMenuItem(value: 'students', child: Text('Specific Student')),
                     ],
                     onChanged: (val) {
                       setState(() {
@@ -244,7 +246,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                         _selectedStudentId = null;
                       });
                       if (val == 'subject_wise') _fetchSubjects();
-                      if (val == 'student') _fetchStudents();
+                      if (val == 'students') _fetchStudents();
                     },
                   ),
                   const SizedBox(height: 16),
@@ -271,7 +273,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  if (_selectedAudience == 'student') ...[
+                  if (_selectedAudience == 'students') ...[
                     DropdownButtonFormField<int>(
                       decoration: const InputDecoration(labelText: 'Select Student'),
                       value: _selectedStudentId,

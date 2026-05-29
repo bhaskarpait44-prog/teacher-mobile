@@ -45,7 +45,7 @@ class NoticeProvider with ChangeNotifier {
   }
 
   Future<void> markAsRead(String token, String noticeId, {String source = 'unified'}) async {
-    final index = _notices.indexWhere((n) => n['id'].toString() == noticeId);
+    final index = _notices.indexWhere((n) => n['id'].toString() == noticeId && (n['source'] ?? 'unified') == source);
     if (index == -1 || _notices[index]['is_read'] == true) return;
 
     // Optimistic update

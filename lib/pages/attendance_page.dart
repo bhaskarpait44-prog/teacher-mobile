@@ -456,7 +456,6 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                               separatorBuilder: (context, index) => const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final student = _students[index];
-                                final firstName = student['first_name'] ?? '';
                                 final enrollmentId = student['enrollment_id'];
                                 final status = _attendance[enrollmentId];
 

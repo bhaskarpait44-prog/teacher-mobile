@@ -257,7 +257,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
           }).toList();
 
           setState(() {
-            _allAssignments = all;
+            _allAssignments = subjectClasses;
             _classes = unique;
             _isLoading = false;
           });
@@ -303,7 +303,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
   Future<void> _pickFile() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf'],
+      allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'txt'],
     );
 
     if (result != null && result.files.single.path != null) {

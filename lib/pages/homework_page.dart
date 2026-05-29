@@ -447,7 +447,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   Future<void> _pickFile() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf'],
+      allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'txt'],
     );
 
     if (result != null && result.files.single.path != null) {
