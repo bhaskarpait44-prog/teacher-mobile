@@ -25,12 +25,6 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> init() async {
-    // Load custom server IP if exists
-    final customIp = await _storage.read(key: 'server_ip');
-    if (customIp != null) {
-      ApiConstants.setServerIp(customIp);
-    }
-
     _token = await _storage.read(key: 'token');
     final userStr = await _storage.read(key: 'user');
     if (userStr != null) {
@@ -92,12 +86,6 @@ class AuthProvider with ChangeNotifier {
       return true;
     }
     return false;
-  }
-
-  Future<void> updateServerIp(String ip) async {
-    await _storage.write(key: 'server_ip', value: ip);
-    ApiConstants.setServerIp(ip);
-    notifyListeners();
   }
 
   Future<void> logout() async {

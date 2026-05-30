@@ -13,7 +13,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _ipController = TextEditingController(text: ApiConstants.serverIp);
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -22,48 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _ipController.dispose();
     super.dispose();
-  }
-
-  void _showSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Server Settings'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Enter your local IPv4 address:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _ipController,
-              decoration: const InputDecoration(
-                hintText: 'e.g. 192.168.1.5',
-                labelText: 'Server IP',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final ip = _ipController.text.trim();
-              if (ip.isNotEmpty) {
-                await Provider.of<AuthProvider>(context, listen: false).updateServerIp(ip);
-                if (mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _login() async {
@@ -218,15 +176,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                   ),
                 ],
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: _showSettingsDialog,
-                tooltip: 'Server Settings',
               ),
             ),
           ],
