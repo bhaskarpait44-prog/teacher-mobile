@@ -140,7 +140,7 @@ class _MyClassesPageState extends State<MyClassesPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
-                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                    backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                     child: Icon(Icons.class_rounded, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 12),
@@ -639,7 +639,7 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: getStatusColor(status, context).withOpacity(0.1),
+              color: getStatusColor(status, context).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

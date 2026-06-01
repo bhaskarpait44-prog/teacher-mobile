@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/constants.dart';
+import '../utils/cache_helper.dart';
 
 class NoticeProvider with ChangeNotifier {
   List<dynamic> _notices = [];
@@ -13,6 +14,31 @@ class NoticeProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   int get unreadCount => _unreadCount;
   String? get error => _error;
+
+  NoticeProvider() {
+    _loadFromCache();
+  }
+
+  Future<void> _loadFromCache() async {
+    try {
+      final cachedData = await CacheHelper.load('cached_notices');
+      if (cachedData != null) {
+        _notices = cachedData;
+        _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading notices from cache: $e');
+    }
+  }
+
+  Future<void> _saveToCache() async {
+    try {
+      await CacheHelper.save('cached_notices', _notices);
+    } catch (e) {
+      debugPrint('Error saving notices to cache: $e');
+    }
+  }
 
   Future<void> fetchNotices(String token) async {
     _isLoading = true;
@@ -32,12 +58,14 @@ class NoticeProvider with ChangeNotifier {
         final data = jsonDecode(response.body);
         _notices = data['data']['notices'] ?? [];
         _unreadCount = _notices.where((n) => n['is_read'] == false).length;
+        _saveToCache();
       } else {
         _error = 'Failed to load notices (Status: ${response.statusCode})';
       }
     } catch (e) {
-      _error = 'An error occurred while fetching notices. Please check your connection.';
+      _error = 'An error occurred while fetching notices. Showing cached data.';
       debugPrint('Error fetching notices: $e');
+      // If error occurs, we already have cached data in _notices from _loadFromCache or previous success
     } finally {
       _isLoading = false;
       notifyListeners();

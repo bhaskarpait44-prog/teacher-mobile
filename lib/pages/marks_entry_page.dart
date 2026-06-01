@@ -169,7 +169,7 @@ class _MarksEntryPageState extends State<MarksEntryPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: getStatusColor(status, context).withOpacity(0.1),
+        color: getStatusColor(status, context).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

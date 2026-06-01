@@ -7,12 +7,14 @@ import 'dart:convert';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notice_provider.dart';
+import 'providers/connectivity_provider.dart';
 import 'utils/theme.dart';
 import 'utils/notification_service.dart';
 import 'pages/login_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/pin_login_page.dart';
 import 'pages/pin_setup_page.dart';
+import 'widgets/connectivity_banner.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -74,6 +76,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => NoticeProvider()),
       ],
@@ -95,6 +98,9 @@ class EduCoreTeacherApp extends StatelessWidget {
           themeMode: themeProvider.mode,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
+          builder: (context, child) {
+            return ConnectivityBanner(child: child ?? const SizedBox.shrink());
+          },
           home: const AuthWrapper(),
         );
       },

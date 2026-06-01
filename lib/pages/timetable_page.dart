@@ -156,7 +156,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: TabBar(
@@ -165,7 +165,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
                 color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                  BoxShadow(color: colorScheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4)),
                 ],
               ),
               labelColor: colorScheme.onPrimary,
@@ -200,8 +200,8 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: _selectedClassFilter == 'All' 
-              ? colorScheme.surfaceVariant.withOpacity(0.5)
-              : colorScheme.primary.withOpacity(0.1),
+              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+              : colorScheme.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -238,7 +238,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
             insets: const EdgeInsets.symmetric(horizontal: 8),
           ),
           labelColor: colorScheme.primary,
-          unselectedLabelColor: colorScheme.onSurfaceVariant.withOpacity(0.6),
+          unselectedLabelColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.2),
           tabs: _days.map((day) => Tab(text: day.substring(0, 3).toUpperCase())).toList(),
         ),
@@ -268,10 +268,10 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.event_available_rounded, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+              child: Icon(Icons.event_available_rounded, size: 64, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
             ),
             const SizedBox(height: 16),
             Text(
@@ -302,7 +302,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
 
   Widget _buildTimelineItem(dynamic period, bool isLive, bool isLast) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = isLive ? colorScheme.primary : colorScheme.outline.withOpacity(0.3);
+    final accentColor = isLive ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3);
 
     return IntrinsicHeight(
       child: Row(
@@ -323,7 +323,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
                 const SizedBox(height: 4),
                 Text(
                   formatTime12hr(period['end_time']),
-                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
+                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -342,7 +342,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
                   ),
                 ),
                 if (!isLast)
-                  Expanded(child: Container(width: 2, color: accentColor.withOpacity(0.3))),
+                  Expanded(child: Container(width: 2, color: accentColor.withValues(alpha: 0.3))),
               ],
             ),
           ),
@@ -352,13 +352,13 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isLive ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+                  color: isLive ? colorScheme.primary.withValues(alpha: 0.05) : colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isLive ? colorScheme.primary.withOpacity(0.2) : colorScheme.outline.withOpacity(0.1),
+                    color: isLive ? colorScheme.primary.withValues(alpha: 0.2) : colorScheme.outline.withValues(alpha: 0.1),
                   ),
                   boxShadow: isLive ? [
-                    BoxShadow(color: colorScheme.primary.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                    BoxShadow(color: colorScheme.primary.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
                   ] : null,
                 ),
                 child: Column(
@@ -410,7 +410,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.assignment_turned_in_outlined, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+            Icon(Icons.assignment_turned_in_outlined, size: 64, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
             const SizedBox(height: 16),
             const Text('No exams scheduled', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
@@ -464,9 +464,9 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
         text,
@@ -500,7 +500,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: color),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Divider(color: color.withOpacity(0.1))),
+        Expanded(child: Divider(color: color.withValues(alpha: 0.1))),
       ],
     );
   }
@@ -514,9 +514,9 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: ClipRRect(
@@ -554,7 +554,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceVariant.withOpacity(0.2),
+                          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -595,7 +595,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded, size: 80, color: Theme.of(context).colorScheme.error.withOpacity(0.5)),
+            Icon(Icons.error_outline_rounded, size: 80, color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
             const SizedBox(height: 24),
             Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 32),

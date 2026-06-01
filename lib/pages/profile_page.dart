@@ -371,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: getStatusColor(status, context).withOpacity(0.1),
+                  color: getStatusColor(status, context).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -514,7 +514,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, size: 20, color: colorScheme.primary),
           ),
           const SizedBox(width: 12),
@@ -618,7 +618,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: InputDecoration(
             labelText: 'Current Value',
             filled: true,
-            fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),

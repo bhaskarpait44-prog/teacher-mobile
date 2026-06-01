@@ -137,7 +137,7 @@ class _AttendancePageState extends State<AttendancePage> {
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: (isFullyMarked ? Colors.green : Colors.orange).withOpacity(0.1),
+                color: (isFullyMarked ? Colors.green : Colors.orange).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -158,7 +158,7 @@ class _AttendancePageState extends State<AttendancePage> {
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
                   value: total > 0 ? marked / total : 0,
-                  backgroundColor: colorScheme.surfaceVariant,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
                   color: isFullyMarked ? Colors.green : Colors.orange,
                 ),
               ],
@@ -287,7 +287,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, anim1, anim2) {
         return Center(
@@ -300,7 +300,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.3),
+                    color: Colors.green.withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   )
@@ -429,7 +429,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
-                              color: colorScheme.surfaceVariant,
+                              color: colorScheme.surfaceContainerHighest,
                               child: Row(
                                 children: [
                                   const Icon(Icons.info_outline, color: Colors.blue),
@@ -568,7 +568,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: getStatusColor(status, context).withOpacity(0.1),
+          color: getStatusColor(status, context).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -604,10 +604,10 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: isSelected ? color : color.withOpacity(0.05),
+          color: isSelected ? color : color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.2),
+            color: isSelected ? color : color.withValues(alpha: 0.2),
             width: 1.5,
           ),
         ),
@@ -635,7 +635,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

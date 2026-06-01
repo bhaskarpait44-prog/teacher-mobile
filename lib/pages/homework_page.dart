@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../utils/file_helper.dart';
 
 class HomeworkPage extends StatefulWidget {
   const HomeworkPage({super.key});
@@ -246,7 +247,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                     const SizedBox(height: 4),
                     LinearProgressIndicator(
                       value: item['student_count'] > 0 ? item['submitted_count'] / item['student_count'] : 0,
-                      backgroundColor: colorScheme.surfaceVariant,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       color: colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
@@ -445,6 +446,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   }
 
   Future<void> _pickFile() async {
+    await FileHelper.requestPermissions();
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'txt'],
@@ -797,6 +799,21 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
                                       if (sub['submitted_at'] != null)
                                         Text('Submitted: ${formatDate(sub['submitted_at'])}', style: const TextStyle(fontSize: 12)),
                                       const SizedBox(height: 12),
+                                      if (sub['attachment'] != null || sub['file_path'] != null) ...[
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            var filePath = sub['attachment'] ?? sub['file_path'];
+                                            if (!filePath.startsWith('http')) {
+                                              filePath = '${ApiConstants.mediaUrl}/$filePath';
+                                            }
+                                            final fileName = filePath.split('/').last;
+                                            FileHelper.downloadAndOpenFile(context, filePath, fileName);
+                                          },
+                                          icon: const Icon(Icons.picture_as_pdf_outlined),
+                                          label: const Text('View Submission'),
+                                        ),
+                                        const SizedBox(height: 12),
+                                      ],
                                       Row(
                                         children: [
                                           Expanded(
@@ -842,7 +859,7 @@ class _HomeworkSubmissionsPageState extends State<HomeworkSubmissionsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: getStatusColor(status, context).withOpacity(0.1),
+        color: getStatusColor(status, context).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

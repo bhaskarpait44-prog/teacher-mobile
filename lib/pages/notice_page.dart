@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notice_provider.dart';
 import '../utils/constants.dart';
+import '../utils/file_helper.dart';
 import 'create_notice_page.dart';
 
 class NoticePage extends StatefulWidget {
@@ -183,7 +184,7 @@ class _NoticePageState extends State<NoticePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined, size: 64, color: colorScheme.outline.withOpacity(0.5)),
+          Icon(Icons.notifications_off_outlined, size: 64, color: colorScheme.outline.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             'No notices found for this filter.',
@@ -215,7 +216,7 @@ class _NoticeCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -236,7 +237,7 @@ class _NoticeCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -394,19 +395,14 @@ class _NoticeCard extends StatelessWidget {
               const SizedBox(height: 32),
               if (notice['attachment_path'] != null)
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    final url = notice['attachment_path'];
+                  onPressed: () {
+                    var url = notice['attachment_path'];
                     if (url != null) {
-                      final uri = Uri.parse(url);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      } else {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Could not open attachment')),
-                          );
-                        }
+                      if (!url.startsWith('http')) {
+                        url = '${ApiConstants.mediaUrl}/$url';
                       }
+                      final fileName = url.split('/').last;
+                      FileHelper.downloadAndOpenFile(context, url, fileName);
                     }
                   },
                   icon: const Icon(Icons.attach_file),

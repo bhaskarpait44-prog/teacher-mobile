@@ -68,7 +68,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -114,7 +114,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
                   height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isActive ? colorScheme.primary : colorScheme.surfaceVariant,
+                    color: isActive ? colorScheme.primary : colorScheme.surfaceContainerHighest,
                     border: Border.all(
                       color: isActive ? colorScheme.primary : colorScheme.outlineVariant,
                       width: 2,

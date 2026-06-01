@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../utils/file_helper.dart';
 
 class CreateNoticePage extends StatefulWidget {
   const CreateNoticePage({super.key});
@@ -137,6 +138,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
   }
 
   Future<void> _pickFile() async {
+    await FileHelper.requestPermissions();
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],

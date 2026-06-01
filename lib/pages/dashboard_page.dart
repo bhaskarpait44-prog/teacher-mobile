@@ -83,7 +83,7 @@ class _DashboardPageState extends State<DashboardPage> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -382,9 +382,9 @@ class _DashboardHomeState extends State<DashboardHome> {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 4)),
             ],
           ),
           child: InkWell(
@@ -398,7 +398,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(isDuty ? Icons.security_rounded : Icons.assignment_rounded, color: color, size: 24),
@@ -526,7 +526,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: Icon(icon, color: color, size: 20),
               ),
               Column(
@@ -586,7 +586,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             borderRadius: BorderRadius.circular(16),
             border: isCurrent ? Border.all(color: colorScheme.primary, width: 2) : null,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: ListTile(
@@ -595,7 +595,7 @@ class _DashboardHomeState extends State<DashboardHome> {
               width: 70,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isCurrent ? colorScheme.primary : colorScheme.surfaceVariant,
+                color: isCurrent ? colorScheme.primary : colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -620,7 +620,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             trailing: isCurrent
                 ? Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: colorScheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: colorScheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                     child: Text('LIVE', style: TextStyle(color: colorScheme.error, fontSize: 10, fontWeight: FontWeight.bold)),
                   )
                 : Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),

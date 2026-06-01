@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
+import '../utils/file_helper.dart';
 
 class StudyMaterialPage extends StatefulWidget {
   const StudyMaterialPage({super.key});
@@ -188,7 +189,11 @@ class _StudyMaterialPageState extends State<StudyMaterialPage> {
               onPressed: () => _deleteMaterial(item['id']),
             ),
             onTap: () {
-              // Optionally show detail or open PDF
+              final fileName = item['file_path']?.split('/').last ?? 'material_${item['id']}.pdf';
+              final url = item['file_path'].startsWith('http') 
+                  ? item['file_path'] 
+                  : '${ApiConstants.mediaUrl}/${item['file_path']}';
+              FileHelper.downloadAndOpenFile(context, url, fileName);
             },
           ),
         );
@@ -301,6 +306,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
   }
 
   Future<void> _pickFile() async {
+    await FileHelper.requestPermissions();
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'txt'],
