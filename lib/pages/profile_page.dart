@@ -239,7 +239,7 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Provider.of<AuthProvider>(context, listen: false).logout();
+              Provider.of<AuthProvider>(context, listen: false).logout(context);
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
@@ -250,62 +250,271 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _showLogoutConfirmation,
+      backgroundColor: colorScheme.surface,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? _buildErrorWidget()
+              : CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    _buildSliverAppBar(),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        child: Column(
+                          children: [
+                            _buildStatsSection(),
+                            const SizedBox(height: 24),
+                            _buildSectionContainer(
+                              title: 'Personal Details',
+                              icon: Icons.person_outline_rounded,
+                              child: Column(
+                                children: [
+                                  _buildInfoItem('Full Name', _profile?['profile']?['name']),
+                                  _buildInfoItem('Employee ID', _profile?['profile']?['employee_id']),
+                                  _buildInfoItem('Gender', _profile?['profile']?['gender']),
+                                  _buildInfoItem('Date of Birth', formatDate(_profile?['profile']?['dob'])),
+                                  _buildInfoItem('Joining Date', formatDate(_profile?['profile']?['joining_date'])),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildSectionContainer(
+                              title: 'Contact Information',
+                              icon: Icons.contact_page_outlined,
+                              action: IconButton(
+                                icon: Icon(_isEditingContact ? Icons.close : Icons.edit_outlined, 
+                                  size: 20, color: colorScheme.primary),
+                                onPressed: () => setState(() => _isEditingContact = !_isEditingContact),
+                              ),
+                              child: _isEditingContact ? _buildEditContactForm() : Column(
+                                children: [
+                                  _buildInfoItem('Email Address', _profile?['profile']?['email']),
+                                  _buildInfoItem('Phone Number', _profile?['profile']?['phone']),
+                                  _buildInfoItem('Emergency Contact', _profile?['profile']?['emergency_contact']),
+                                  _buildInfoItem('Address', _profile?['profile']?['address']),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildSectionContainer(
+                              title: 'Academic Background',
+                              icon: Icons.school_outlined,
+                              child: Column(
+                                children: [
+                                  _buildInfoItem('Qualification', _profile?['profile']?['highest_qualification']),
+                                  _buildInfoItem('Specialization', _profile?['profile']?['specialization']),
+                                  _buildInfoItem('University', _profile?['profile']?['university_name']),
+                                  _buildInfoItem('Experience', '${_profile?['profile']?['years_of_experience'] ?? 0} Years'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildSectionContainer(
+                              title: 'Security',
+                              icon: Icons.security_rounded,
+                              child: _buildChangePassword(),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildSectionContainer(
+                              title: 'Correction Requests',
+                              icon: Icons.history_edu_rounded,
+                              child: Column(
+                                children: [
+                                  _buildCorrectionRequest(),
+                                  const SizedBox(height: 16),
+                                  _buildCorrectionHistory(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              width: double.infinity,
+                              child: TextButton.icon(
+                                onPressed: _showLogoutConfirmation,
+                                icon: const Icon(Icons.logout_rounded, color: Colors.red),
+                                label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildSliverAppBar() {
+    final profileData = _profile?['profile'];
+    final name = profileData?['name'] ?? 'Teacher';
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SliverAppBar(
+      expandedHeight: 280,
+      pinned: true,
+      stretch: true,
+      elevation: 0,
+      backgroundColor: colorScheme.primary,
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [StretchMode.zoomBackground],
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.primary,
+                colorScheme.primaryContainer,
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: colorScheme.secondaryContainer,
+                  child: Text(
+                    getInitials(name),
+                    style: TextStyle(
+                      fontSize: 36, 
+                      color: colorScheme.onSecondaryContainer, 
+                      fontWeight: FontWeight.w800
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 24, 
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.white
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                profileData?['designation'] ?? 'Department Teacher',
+                style: TextStyle(
+                  fontSize: 16, 
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  profileData?['department'] ?? 'General',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionContainer({required String title, required IconData icon, required Widget child, Widget? action}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : RefreshIndicator(
-                    onRefresh: _fetchProfile,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          _buildProfileHeader(),
-                          const SizedBox(height: 32),
-                          _buildStatsSection(),
-                          const SizedBox(height: 32),
-                          _buildContactInfo(),
-                          const SizedBox(height: 32),
-                          _buildAcademicInfo(),
-                          const SizedBox(height: 32),
-                          _buildAccountInfo(),
-                          const SizedBox(height: 32),
-                          _buildChangePassword(),
-                          const SizedBox(height: 32),
-                          _buildCorrectionRequest(),
-                          const SizedBox(height: 32),
-                          _buildCorrectionHistory(),
-                          const SizedBox(height: 40),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _showLogoutConfirmation,
-                              icon: const Icon(Icons.logout, color: Colors.red),
-                              label: const Text('Logout', style: TextStyle(color: Colors.red)),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Colors.red),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                  ),
+                  ],
+                ),
+                if (action != null) action,
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(String label, String? value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13, 
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value ?? 'N/A',
+              style: const TextStyle(
+                fontSize: 14, 
+                fontWeight: FontWeight.w600
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -314,268 +523,119 @@ class _ProfilePageState extends State<ProfilePage> {
     final stats = _profile?['performance_summary'];
     return Row(
       children: [
-        Expanded(child: _buildStatCard('Attendance Rate', '${stats?['attendance_marking_rate']?['on_time_rate'] ?? 0}%', Icons.calendar_today_outlined, Colors.blue)),
+        Expanded(
+          child: _buildStatCard(
+            'Attendance', 
+            '${stats?['attendance_marking_rate']?['on_time_rate'] ?? 0}%', 
+            Icons.speed_rounded, 
+            Colors.blue
+          ),
+        ),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard('Exams Published', '${stats?['marks_entry_completion_rate']?['total'] ?? 0}', Icons.assignment_turned_in_outlined, Colors.green)),
+        Expanded(
+          child: _buildStatCard(
+            'Marks Entry', 
+            '${stats?['marks_entry_completion_rate']?['total'] ?? 0}', 
+            Icons.task_alt_rounded, 
+            Colors.green
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 10)),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
-
-  Widget _buildAcademicInfo() {
-    final profileData = _profile?['profile'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Academic Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        _buildInfoRow(Icons.school_outlined, 'Qualification', profileData?['highest_qualification']),
-        _buildInfoRow(Icons.book_outlined, 'Specialization', profileData?['specialization']),
-        _buildInfoRow(Icons.account_balance_outlined, 'University', profileData?['university_name']),
-        _buildInfoRow(Icons.history_edu_outlined, 'Exp. (Years)', profileData?['years_of_experience']?.toString()),
-      ],
-    );
-  }
-
-  Widget _buildCorrectionHistory() {
-    final requests = _profile?['correction_requests'] as List?;
-    if (requests == null || requests.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Recent Correction Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...requests.map((req) {
-          final status = req['status']?.toString().toLowerCase();
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              title: Text(req['field_name'].toString().replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              subtitle: Text('Requested: ${req['requested_value']}\nReason: ${req['reason']}', style: const TextStyle(fontSize: 11)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: getStatusColor(status, context).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status?.toUpperCase() ?? 'PENDING',
-                  style: TextStyle(color: getStatusColor(status, context), fontSize: 9, fontWeight: FontWeight.bold),
-                ),
-              ),
-              isThreeLine: true,
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _fetchProfile,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    final profileData = _profile?['profile'];
-    final name = profileData?['name'] ?? 'Teacher';
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: colorScheme.primary,
-              child: Text(getInitials(name), style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 16),
-            Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            Text(profileData?['designation'] ?? 'Designation', style: TextStyle(color: colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildHeaderBadge(Icons.badge_outlined, profileData?['employee_id'] ?? 'ID'),
-                const SizedBox(width: 16),
-                _buildHeaderBadge(Icons.business_outlined, profileData?['department'] ?? 'Dept'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Joined on ${formatDate(profileData?['joining_date'])}', style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderBadge(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _buildContactInfo() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final profileData = _profile?['profile'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            IconButton(
-              icon: Icon(_isEditingContact ? Icons.close : Icons.edit_outlined, color: colorScheme.primary),
-              onPressed: () => setState(() => _isEditingContact = !_isEditingContact),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_isEditingContact) ...[
-          _buildEditField(_phoneController, 'Phone Number', Icons.phone_outlined),
-          const SizedBox(height: 12),
-          _buildEditField(_emergencyController, 'Emergency Contact', Icons.contact_emergency_outlined),
-          const SizedBox(height: 12),
-          _buildEditField(_addressController, 'Address', Icons.location_on_outlined, maxLines: 2),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _updateContact,
-            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-            child: const Text('Save Contact Info'),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
           ),
-        ] else ...[
-          _buildInfoRow(Icons.phone_outlined, 'Phone', profileData?['phone']),
-          _buildInfoRow(Icons.contact_emergency_outlined, 'Emergency', profileData?['emergency_contact']),
-          _buildInfoRow(Icons.location_on_outlined, 'Address', profileData?['address']),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEditContactForm() {
+    return Column(
+      children: [
+        _buildModernTextField(_phoneController, 'Phone Number', Icons.phone_rounded),
+        const SizedBox(height: 12),
+        _buildModernTextField(_emergencyController, 'Emergency Contact', Icons.emergency_rounded),
+        const SizedBox(height: 12),
+        _buildModernTextField(_addressController, 'Residential Address', Icons.location_on_rounded, maxLines: 2),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _updateContact,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: const Text('Update Contact Info', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
       ],
     );
   }
 
-  Widget _buildEditField(TextEditingController controller, String label, IconData icon, {int maxLines = 1}) {
+  Widget _buildModernTextField(TextEditingController controller, String label, IconData icon, {int maxLines = 1}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String? value) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, size: 20, color: colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-              Text(value ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAccountInfo() {
-    final profileData = _profile?['profile'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Account Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        _buildInfoRow(Icons.email_outlined, 'Email', profileData?['email']),
-        _buildInfoRow(Icons.admin_panel_settings_outlined, 'Role', 'Teacher'),
-      ],
     );
   }
 
   Widget _buildChangePassword() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        _buildPasswordField(_currentPassController, 'Current Password', _showCurrentPass, (v) => setState(() => _showCurrentPass = v)),
+        _buildModernPasswordField(_currentPassController, 'Current Password', _showCurrentPass, (v) => setState(() => _showCurrentPass = v)),
         const SizedBox(height: 12),
-        _buildPasswordField(_newPassController, 'New Password', _showNewPass, (v) => setState(() => _showNewPass = v)),
+        _buildModernPasswordField(_newPassController, 'New Password', _showNewPass, (v) => setState(() => _showNewPass = v)),
         const SizedBox(height: 12),
-        _buildPasswordField(_confirmPassController, 'Confirm New Password', _showConfirmPass, (v) => setState(() => _showConfirmPass = v)),
-        const SizedBox(height: 16),
+        _buildModernPasswordField(_confirmPassController, 'Confirm New Password', _showConfirmPass, (v) => setState(() => _showConfirmPass = v)),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _changePassword,
-          style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-          child: const Text('Update Password'),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
 
-  Widget _buildPasswordField(TextEditingController controller, String label, bool show, Function(bool) onToggle) {
+  Widget _buildModernPasswordField(TextEditingController controller, String label, bool show, Function(bool) onToggle) {
     return TextField(
       controller: controller,
       obscureText: !show,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: const Icon(Icons.lock_outline),
+        prefixIcon: const Icon(Icons.lock_rounded, size: 20),
         suffixIcon: IconButton(
-          icon: Icon(show ? Icons.visibility_off : Icons.visibility),
+          icon: Icon(show ? Icons.visibility_off : Icons.visibility, size: 20),
           onPressed: () => onToggle(!show),
         ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
@@ -587,15 +647,16 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Identity Correction Request', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Text('For non-editable fields (Name, Employee ID, etc.)', style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+        const Text(
+          'For locked fields like Name or DOB, please submit a correction request to the administrator.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           value: _correctionField,
           decoration: InputDecoration(
-            labelText: 'Select Field',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            labelText: 'Select Field to Correct',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
           ),
           items: const [
             DropdownMenuItem(value: 'name', child: Text('Full Name')),
@@ -607,49 +668,110 @@ class _ProfilePageState extends State<ProfilePage> {
             _correctionField = val;
             if (val == 'name') _currentValueController.text = profileData?['name'] ?? 'N/A';
             else if (val == 'employee_id') _currentValueController.text = profileData?['employee_id'] ?? 'N/A';
-            else if (val == 'dob') _currentValueController.text = profileData?['dob'] ?? 'N/A';
+            else if (val == 'dob') _currentValueController.text = formatDate(profileData?['dob']) ?? 'N/A';
             else if (val == 'gender') _currentValueController.text = profileData?['gender'] ?? 'N/A';
           }),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _currentValueController,
-          readOnly: true,
-          decoration: InputDecoration(
-            labelText: 'Current Value',
-            filled: true,
-            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        if (_correctionField != null) ...[
+          const SizedBox(height: 12),
+          _buildModernTextField(_currentValueController, 'Current Value', Icons.info_outline_rounded),
+          const SizedBox(height: 12),
+          _buildModernTextField(_requestedValueController, 'Correct Value', Icons.edit_note_rounded),
+          const SizedBox(height: 12),
+          _buildModernTextField(_reasonController, 'Reason for Correction', Icons.chat_bubble_outline_rounded, maxLines: 2),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _submitCorrection,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(color: colorScheme.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Submit Correction Request', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _requestedValueController,
-          decoration: InputDecoration(
-            labelText: 'Requested Value',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _reasonController,
-          maxLines: 2,
-          decoration: InputDecoration(
-            labelText: 'Reason for correction',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton(
-          onPressed: _submitCorrection,
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-            side: BorderSide(color: colorScheme.primary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text('Submit Request'),
-        ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildCorrectionHistory() {
+    final requests = _profile?['correction_requests'] as List?;
+    if (requests == null || requests.isEmpty) return const SizedBox.shrink();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        const Text('Recent Requests', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...requests.take(3).map((req) {
+          final status = req['status']?.toString().toLowerCase();
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        req['field_name'].toString().replaceAll('_', ' ').toUpperCase(),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'To: ${req['requested_value']}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusChip(status),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip(String? status) {
+    final color = getStatusColor(status, context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status?.toUpperCase() ?? 'PENDING',
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 64, color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: 16),
+          Text(_errorMessage!, style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 24),
+          ElevatedButton(onPressed: _fetchProfile, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

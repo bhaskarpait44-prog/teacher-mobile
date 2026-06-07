@@ -377,13 +377,13 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
       );
 
       if (submitRes.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Marks submitted successfully'), backgroundColor: Colors.green),
-          );
-          Navigator.pop(context);
-        }
-      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Marks submitted successfully'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+ else {
         final data = jsonDecode(submitRes.body);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to submit marks')));
@@ -398,15 +398,38 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
     }
   }
 
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _fetchStudents,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubmitted = widget.entryStatus == 'submitted';
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.subjectName} (${_maxMarks})')),
+      appBar: AppBar(title: Text('${widget.subjectName} ($_maxMarks)')),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
+            : _errorMessage != null
+                ? _buildErrorWidget()
+                : Column(
                 children: [
                   Expanded(
                     child: ListView.separated(

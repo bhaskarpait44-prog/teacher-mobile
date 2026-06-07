@@ -325,7 +325,6 @@ class _ClassOverviewPageState extends State<ClassOverviewPage> with SingleTicker
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final student = _students[index];
-        final firstName = student['first_name'] ?? '';
         final name = '${student['first_name']} ${student['last_name']}';
         return ListTile(
           leading: CircleAvatar(
@@ -580,7 +579,6 @@ class _StudentDetailPageState extends State<StudentDetailPage> with SingleTicker
 
   Widget _buildProfileCard() {
     if (_studentProfile == null) return const SizedBox.shrink();
-    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(

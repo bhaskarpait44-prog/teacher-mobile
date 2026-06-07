@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notice_provider.dart';
+import 'providers/dashboard_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'utils/theme.dart';
 import 'utils/notification_service.dart';
@@ -79,6 +80,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => NoticeProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
       ],
       child: const EduCoreTeacherApp(),
     ),

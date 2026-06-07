@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_provider.dart';
 import 'welcome_page.dart';
 
 class PinSetupPage extends StatefulWidget {
@@ -68,6 +69,12 @@ class _PinSetupPageState extends State<PinSetupPage> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      
+      if (authProvider.token != null) {
+        await dashboardProvider.fetchDashboardData(authProvider.token!);
+      }
+      
       await authProvider.setPin(_pin);
       
       if (mounted) {

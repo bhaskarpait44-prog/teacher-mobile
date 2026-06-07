@@ -98,13 +98,13 @@ class _HomeworkPageState extends State<HomeworkPage> {
         );
 
         if (response.statusCode == 200) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Homework deleted successfully'), backgroundColor: Colors.green),
-            );
-            _fetchHomework();
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Homework deleted successfully'), backgroundColor: Colors.green),
+          );
+          _fetchHomework();
         }
+
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting homework: $e')));
@@ -155,15 +155,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                   : _buildHomeworkList(),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateHomeworkPage()),
-          ).then((_) => _fetchHomework());
-        },
-        child: const Icon(Icons.add_rounded),
-      ),
+      floatingActionButton: null,
     );
   }
 
@@ -194,7 +186,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       itemCount: _homeworkList.length,
       itemBuilder: (context, index) {
         final item = _homeworkList[index];
@@ -386,7 +378,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
             _allAssignments = allAssignments;
             _classes = uniqueClasses;
             if (_isEditing) {
-               _onClassChanged('${_selectedClassId}-${_selectedSectionId}', fetchOnly: true);
+               _onClassChanged('$_selectedClassId-$_selectedSectionId', fetchOnly: true);
             }
             _isLoading = false;
           });

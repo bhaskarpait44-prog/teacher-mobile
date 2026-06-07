@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_provider.dart';
 
 class PinLoginPage extends StatefulWidget {
   const PinLoginPage({super.key});
@@ -12,8 +13,10 @@ class PinLoginPage extends StatefulWidget {
 class _PinLoginPageState extends State<PinLoginPage> {
   String _pin = "";
   String? _errorMessage;
+  bool _isLoading = false;
 
   void _handleNumberPress(String number) {
+    if (_isLoading) return;
     if (_pin.length < 4) {
       setState(() {
         _errorMessage = null;
@@ -27,6 +30,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
   }
 
   void _handleBackspace() {
+    if (_isLoading) return;
     if (_pin.isNotEmpty) {
       setState(() {
         _errorMessage = null;
@@ -35,14 +39,33 @@ class _PinLoginPageState extends State<PinLoginPage> {
     }
   }
 
-  void _verifyPin() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.verifyPin(_pin)) {
-      // AuthWrapper will handle navigation to Dashboard
-    } else {
+  Future<void> _verifyPin() async {
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
+      final success = await authProvider.verifyPin(
+        _pin,
+        onSuccess: () async {
+          if (authProvider.token != null) {
+            await dashboardProvider.fetchDashboardData(authProvider.token!);
+          }
+        },
+      );
+
+      if (!success) {
+        setState(() {
+          _errorMessage = 'Incorrect PIN. Please try again.';
+          _pin = "";
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        _errorMessage = 'Incorrect PIN. Please try again.';
+        _errorMessage = 'An error occurred. Please try again.';
         _pin = "";
+        _isLoading = false;
       });
     }
   }
@@ -104,25 +127,28 @@ class _PinLoginPageState extends State<PinLoginPage> {
             const Spacer(),
             
             // PIN Dots Display
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                final isActive = index < _pin.length;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isActive ? colorScheme.primary : colorScheme.surfaceContainerHighest,
-                    border: Border.all(
-                      color: isActive ? colorScheme.primary : colorScheme.outlineVariant,
-                      width: 2,
+            if (_isLoading)
+              const CircularProgressIndicator()
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(4, (index) {
+                  final isActive = index < _pin.length;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isActive ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+                      border: Border.all(
+                        color: isActive ? colorScheme.primary : colorScheme.outlineVariant,
+                        width: 2,
+                      ),
                     ),
-                  ),
-                );
-              }),
-            ),
+                  );
+                }),
+              ),
             
             if (_errorMessage != null) ...[
               const SizedBox(height: 24),
@@ -135,25 +161,28 @@ class _PinLoginPageState extends State<PinLoginPage> {
             const Spacer(),
             
             // Numeric Keypad
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-              child: Column(
-                children: [
-                  _buildKeyboardRow(['1', '2', '3']),
-                  const SizedBox(height: 20),
-                  _buildKeyboardRow(['4', '5', '6']),
-                  const SizedBox(height: 20),
-                  _buildKeyboardRow(['7', '8', '9']),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildForgotPinButton(),
-                      _buildKey('0'),
-                      _buildBackspaceKey(),
-                    ],
-                  ),
-                ],
+            Opacity(
+              opacity: _isLoading ? 0.5 : 1.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                child: Column(
+                  children: [
+                    _buildKeyboardRow(['1', '2', '3']),
+                    const SizedBox(height: 20),
+                    _buildKeyboardRow(['4', '5', '6']),
+                    const SizedBox(height: 20),
+                    _buildKeyboardRow(['7', '8', '9']),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildForgotPinButton(),
+                        _buildKey('0'),
+                        _buildBackspaceKey(),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -218,7 +247,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Provider.of<AuthProvider>(context, listen: false).logout();
+                  Provider.of<AuthProvider>(context, listen: false).logout(context);
                 },
                 child: const Text('Log Out'),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_provider.dart';
 import '../utils/constants.dart';
 
 class LoginPage extends StatefulWidget {
@@ -40,13 +41,19 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
       await authProvider.login(
         _emailController.text.trim(),
         _passwordController.text,
+        onLoginSuccess: (token) async {
+          await dashboardProvider.fetchDashboardData(token);
+        },
       );
 
       // No manual navigation here. AuthWrapper will rebuild and show PinSetupPage if no PIN is set.
-    } catch (e) {
+    }
+ catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = e.toString().replaceAll('Exception: ', '');

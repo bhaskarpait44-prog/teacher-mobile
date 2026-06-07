@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../utils/constants.dart';
 import '../utils/notification_service.dart';
+import '../providers/dashboard_provider.dart';
 
 class AuthProvider with ChangeNotifier {
   final _storage = const FlutterSecureStorage();
@@ -40,7 +42,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password, {Future<void> Function(String)? onLoginSuccess}) async {
     final response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}/auth/login'),
       headers: {'Content-Type': 'application/json'},
@@ -58,8 +60,15 @@ class AuthProvider with ChangeNotifier {
         throw Exception('Access denied. Only teachers can log in here.');
       }
 
-      _token = data['data']['token'];
-      _user = data['data']['user'];
+      final newToken = data['data']['token'];
+      final newUser = data['data']['user'];
+
+      if (onLoginSuccess != null) {
+        await onLoginSuccess(newToken);
+      }
+
+      _token = newToken;
+      _user = newUser;
 
       await _storage.write(key: 'token', value: _token);
       await _storage.write(key: 'user', value: jsonEncode(_user));
@@ -79,8 +88,11 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  bool verifyPin(String pin) {
+  Future<bool> verifyPin(String pin, {Future<void> Function()? onSuccess}) async {
     if (_storedPin == pin) {
+      if (onSuccess != null) {
+        await onSuccess();
+      }
       _isPinAuthenticated = true;
       notifyListeners();
       return true;
@@ -88,14 +100,14 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
+    try {
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      dashboardProvider.clear();
+    } catch (_) {}
+
     await _storage.delete(key: 'token');
     await _storage.delete(key: 'user');
-    // We might want to keep the PIN or delete it. 
-    // Usually, if logging out completely, we might want to keep PIN for that device if it's per-user.
-    // But for simplicity, let's clear it if the user wants a fresh start.
-    // However, the requirement says "future login", which often means quick access.
-    // Let's clear everything on logout to be safe.
     await _storage.delete(key: 'user_pin');
     _token = null;
     _user = null;

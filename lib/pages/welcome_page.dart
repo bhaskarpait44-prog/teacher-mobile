@@ -10,7 +10,7 @@ class WelcomePage extends StatelessWidget {
 
   Future<void> _logout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logout();
+    await authProvider.logout(context);
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,

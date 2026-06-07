@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/notice_provider.dart';
-import '../utils/constants.dart';
+import '../providers/dashboard_provider.dart';
 import '../utils/helpers.dart';
 import '../utils/notification_service.dart';
 import 'attendance_page.dart';
@@ -119,6 +117,21 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
+      floatingActionButton: _currentIndex == 3
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateHomeworkPage()),
+                ).then((_) {
+                  // This is a bit tricky since we need to refresh the HomeworkPage.
+                  // For now, HomeworkPage will refresh itself on initState, 
+                  // but we might need a more robust way to trigger refresh from here.
+                });
+              },
+              child: const Icon(Icons.add_rounded),
+            )
+          : null,
     );
   }
 }
@@ -131,15 +144,21 @@ class DashboardHome extends StatefulWidget {
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
-  bool _isLoading = true;
-  Map<String, dynamic>? _dashboardData;
-  String? _errorMessage;
-
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
+    _initialFetch();
     _fetchNotices();
+  }
+
+  void _initialFetch() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (dashboardProvider.dashboardData == null && authProvider.token != null) {
+        dashboardProvider.fetchDashboardData(authProvider.token!);
+      }
+    });
   }
 
   void _fetchNotices() {
@@ -151,61 +170,20 @@ class _DashboardHomeState extends State<DashboardHome> {
     });
   }
 
-  Future<void> _fetchDashboardData() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      
-      if (token == null) {
-        _handleLogout();
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/teacher/dashboard'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _dashboardData = data['data'];
-            _isLoading = false;
-          });
-        }
-      } else if (response.statusCode == 401) {
-        _handleLogout();
-      } else {
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Failed to load dashboard';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'An error occurred: $e';
-          _isLoading = false;
-        });
-      }
+  Future<void> _refreshData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    if (authProvider.token != null) {
+      await Future.wait([
+        dashboardProvider.fetchDashboardData(authProvider.token!),
+        Provider.of<NoticeProvider>(context, listen: false).fetchNotices(authProvider.token!),
+      ]);
     }
   }
 
   void _handleLogout() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logout();
+    await authProvider.logout(context);
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -218,8 +196,13 @@ class _DashboardHomeState extends State<DashboardHome> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final dashboardProvider = Provider.of<DashboardProvider>(context);
     final name = authProvider.user?['name'] ?? 'Teacher';
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (dashboardProvider.errorMessage == 'Unauthorized') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleLogout());
+    }
     
     return Scaffold(
       appBar: AppBar(
@@ -285,16 +268,16 @@ class _DashboardHomeState extends State<DashboardHome> {
         ],
       ),
       body: SafeArea(
-        child: _isLoading
+        child: dashboardProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorWidget()
-                : _buildDashboardContent(),
+            : dashboardProvider.errorMessage != null
+                ? _buildErrorWidget(dashboardProvider.errorMessage!)
+                : _buildDashboardContent(dashboardProvider.dashboardData),
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -304,13 +287,18 @@ class _DashboardHomeState extends State<DashboardHome> {
             Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 16),
             Text(
-              _errorMessage!,
+              message,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _fetchDashboardData,
+              onPressed: () {
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                if (authProvider.token != null) {
+                  Provider.of<DashboardProvider>(context, listen: false).fetchDashboardData(authProvider.token!);
+                }
+              },
               child: const Text('Retry'),
             ),
           ],
@@ -319,13 +307,13 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildDashboardContent() {
-    final teacher = _dashboardData?['teacher'];
-    final glance = _dashboardData?['today_at_a_glance'];
-    final schedule = _dashboardData?['today_schedule'] as List?;
-    final myClasses = _dashboardData?['my_class'] as List? ?? [];
-    final subjectClasses = _dashboardData?['subject_classes'] as List? ?? [];
-    final upcomingExams = _dashboardData?['upcoming_exams'] as List?;
+  Widget _buildDashboardContent(Map<String, dynamic>? dashboardData) {
+    final teacher = dashboardData?['teacher'];
+    final glance = dashboardData?['today_at_a_glance'];
+    final schedule = dashboardData?['today_schedule'] as List?;
+    final myClasses = dashboardData?['my_class'] as List? ?? [];
+    final subjectClasses = dashboardData?['subject_classes'] as List? ?? [];
+    final upcomingExams = dashboardData?['upcoming_exams'] as List?;
 
     final seen = <String>{};
     final uniqueClasses = [...myClasses, ...subjectClasses].where((c) {
@@ -336,13 +324,10 @@ class _DashboardHomeState extends State<DashboardHome> {
     }).toList();
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await _fetchDashboardData();
-        _fetchNotices();
-      },
+      onRefresh: _refreshData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -633,4 +618,3 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 }
-

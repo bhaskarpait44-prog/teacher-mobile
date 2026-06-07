@@ -95,10 +95,9 @@ class _LeavePageState extends State<LeavePage> {
         );
 
         if (response.statusCode == 200) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Application cancelled'), backgroundColor: Colors.green));
-            _fetchLeaveData();
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Application cancelled'), backgroundColor: Colors.green));
+          _fetchLeaveData();
         }
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -184,12 +183,15 @@ class _LeavePageState extends State<LeavePage> {
             itemBuilder: (context, index) {
               final b = _balances[index];
               final allowed = b['total_allowed'] ?? 0;
-              final taken = b['total_taken'] ?? 0;
-              final remaining = allowed - taken;
+              final taken = b['used'] ?? 0;
+              final remaining = b['remaining'] ?? 0;
               
               Color borderColor = Colors.green;
-              if (remaining == 0) borderColor = Colors.red;
-              else if (remaining <= 5) borderColor = Colors.orange;
+              if (remaining == 0) {
+                borderColor = Colors.red;
+              } else if (remaining <= 5) {
+                borderColor = Colors.orange;
+              }
 
               return Container(
                 width: 140,

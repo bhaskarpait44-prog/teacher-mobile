@@ -285,7 +285,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
       itemCount: periods.length,
       itemBuilder: (context, index) {
         final period = periods[index];
@@ -430,7 +430,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
     }
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       children: [
         if (myDuties.isNotEmpty) ...[
           _buildSubHeader('Invigilation Duties', Icons.security_rounded, Colors.orange),
