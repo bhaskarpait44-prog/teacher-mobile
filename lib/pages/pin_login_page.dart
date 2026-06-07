@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../widgets/branded_loader.dart';
 
 class PinLoginPage extends StatefulWidget {
   const PinLoginPage({super.key});
@@ -128,7 +129,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
             
             // PIN Dots Display
             if (_isLoading)
-              const CircularProgressIndicator()
+              const BrandedLoader()
             else
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

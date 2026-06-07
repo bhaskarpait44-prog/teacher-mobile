@@ -5,8 +5,10 @@ import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../widgets/branded_loader.dart';
 
 class AttendancePage extends StatefulWidget {
+
   const AttendancePage({super.key});
 
   @override
@@ -89,7 +91,7 @@ class _AttendancePageState extends State<AttendancePage> {
         child: RefreshIndicator(
           onRefresh: _fetchAttendanceStatus,
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const BrandedLoader(message: 'Loading Attendance...')
               : _errorMessage != null
                   ? _buildErrorWidget()
                   : _buildClassList(),

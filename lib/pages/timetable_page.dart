@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
+import '../widgets/branded_loader.dart';
 import '../utils/helpers.dart';
 
 class TimetablePage extends StatefulWidget {
@@ -180,7 +181,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const BrandedLoader(message: 'Loading Timetable...')
           : _errorMessage != null
               ? _buildErrorWidget()
               : TabBarView(

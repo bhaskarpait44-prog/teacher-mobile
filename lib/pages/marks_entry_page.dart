@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
+import '../widgets/branded_loader.dart';
 import '../utils/helpers.dart';
 
 class MarksEntryPage extends StatefulWidget {
@@ -92,7 +93,7 @@ class _MarksEntryPageState extends State<MarksEntryPage> {
         child: RefreshIndicator(
           onRefresh: _fetchExams,
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const BrandedLoader(message: 'Loading Exams...')
               : _errorMessage != null
                   ? _buildErrorWidget()
                   : _buildExamList(),

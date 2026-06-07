@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notice_provider.dart';
+import '../widgets/branded_loader.dart';
 import '../utils/constants.dart';
 import '../utils/file_helper.dart';
 import 'create_notice_page.dart';
@@ -81,7 +82,7 @@ class _NoticePageState extends State<NoticePage> {
             child: Consumer<NoticeProvider>(
               builder: (context, noticeProvider, child) {
                 if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const BrandedLoader(message: 'Loading Notices...');
                 }
 
                 if (noticeProvider.error != null && noticeProvider.notices.isEmpty) {

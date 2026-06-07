@@ -7,6 +7,7 @@ import '../providers/notice_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../utils/helpers.dart';
 import '../utils/notification_service.dart';
+import '../widgets/branded_loader.dart';
 import 'attendance_page.dart';
 import 'homework_page.dart';
 import 'timetable_page.dart';
@@ -155,7 +156,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (dashboardProvider.dashboardData == null && authProvider.token != null) {
+      if (authProvider.token != null) {
         dashboardProvider.fetchDashboardData(authProvider.token!);
       }
     });
@@ -269,7 +270,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       ),
       body: SafeArea(
         child: dashboardProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const BrandedLoader(message: 'Loading Dashboard...')
             : dashboardProvider.errorMessage != null
                 ? _buildErrorWidget(dashboardProvider.errorMessage!)
                 : _buildDashboardContent(dashboardProvider.dashboardData),

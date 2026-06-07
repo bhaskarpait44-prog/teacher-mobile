@@ -193,10 +193,15 @@ class _ProfilePageState extends State<ProfilePage> {
       final token = authProvider.token;
       
       String currentValue = 'N/A';
-      if (_correctionField == 'name') currentValue = _profile?['name'] ?? 'N/A';
-      else if (_correctionField == 'employee_id') currentValue = _profile?['employee_id'] ?? 'N/A';
-      else if (_correctionField == 'dob') currentValue = _profile?['dob'] ?? 'N/A';
-      else if (_correctionField == 'gender') currentValue = _profile?['gender'] ?? 'N/A';
+      if (_correctionField == 'name') {
+        currentValue = _profile?['name'] ?? 'N/A';
+      } else if (_correctionField == 'employee_id') {
+        currentValue = _profile?['employee_id'] ?? 'N/A';
+      } else if (_correctionField == 'dob') {
+        currentValue = _profile?['dob'] ?? 'N/A';
+      } else if (_correctionField == 'gender') {
+        currentValue = _profile?['gender'] ?? 'N/A';
+      }
 
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/teacher/profile/correction-request'),

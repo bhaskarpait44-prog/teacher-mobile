@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 import '../utils/file_helper.dart';
+import '../widgets/branded_loader.dart';
 
 class HomeworkPage extends StatefulWidget {
   const HomeworkPage({super.key});
@@ -104,11 +105,9 @@ class _HomeworkPageState extends State<HomeworkPage> {
           );
           _fetchHomework();
         }
-
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting homework: $e')));
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting homework: $e')));
       }
     }
   }
@@ -149,7 +148,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
         child: RefreshIndicator(
           onRefresh: _fetchHomework,
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const BrandedLoader(message: 'Loading Homework...')
               : _errorMessage != null
                   ? _buildErrorWidget()
                   : _buildHomeworkList(),
