@@ -11,6 +11,7 @@ import 'providers/dashboard_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'utils/theme.dart';
 import 'utils/notification_service.dart';
+import 'utils/constants.dart';
 import 'pages/login_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/pin_login_page.dart';
@@ -64,6 +65,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await ApiConstants.init();
   
   try {
     await Firebase.initializeApp();
