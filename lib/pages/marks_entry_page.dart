@@ -273,6 +273,8 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
   }
 
   Future<void> _saveMarks(bool isFinalSubmit) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
     // Validate marks
     for (var student in _students) {
       final id = student['enrollment_id'];
@@ -316,8 +318,6 @@ class _EnterMarksDetailPageState extends State<EnterMarksDetailPage> {
     setState(() => _isSaving = true);
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
       
       final entries = _students.map((s) {
         final marksStr = _controllers[s['enrollment_id']]!.text.trim();

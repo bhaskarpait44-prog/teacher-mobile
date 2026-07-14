@@ -73,6 +73,8 @@ class _HomeworkPageState extends State<HomeworkPage> {
   }
 
   Future<void> _deleteHomework(int id) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -91,8 +93,6 @@ class _HomeworkPageState extends State<HomeworkPage> {
 
     if (confirmed == true) {
       try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final token = authProvider.token;
         final response = await http.delete(
           Uri.parse('${ApiConstants.baseUrl}/teacher/homework/$id'),
           headers: {'Authorization': 'Bearer $token'},
@@ -307,7 +307,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
   List<dynamic> _allAssignments = [];
   String? _classesError;
   List<dynamic> _subjects = [];
-  bool _isSubjectsLoading = false;
+  final bool _isSubjectsLoading = false;
 
   int? _selectedClassId;
   int? _selectedSectionId;
@@ -551,7 +551,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                     children: [
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(labelText: 'Class & Section'),
-                        value: _selectedClassId != null ? '${_selectedClassId}-${_selectedSectionId}' : null,
+                        initialValue: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
                         items: _classes.map((c) {
                           return DropdownMenuItem(
                             value: '${c['class_id']}-${c['section_id']}',
@@ -569,7 +569,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                             : null,
                         ),
-                        value: _selectedSubjectId,
+                        initialValue: _selectedSubjectId,
                         items: _subjects.map((s) {
                           return DropdownMenuItem<int>(value: s['id'], child: Text(s['name']));
                         }).toList(),
@@ -613,7 +613,7 @@ class _CreateHomeworkPageState extends State<CreateHomeworkPage> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(labelText: 'Submission Type'),
-                        value: _submissionType,
+                        initialValue: _submissionType,
                         items: const [
                           DropdownMenuItem(value: 'online', child: Text('Online (App)')),
                           DropdownMenuItem(value: 'written', child: Text('Written (Physical)')),

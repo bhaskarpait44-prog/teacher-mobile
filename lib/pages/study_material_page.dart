@@ -71,6 +71,8 @@ class _StudyMaterialPageState extends State<StudyMaterialPage> {
   }
 
   Future<void> _deleteMaterial(int id) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -89,8 +91,6 @@ class _StudyMaterialPageState extends State<StudyMaterialPage> {
 
     if (confirmed == true) {
       try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final token = authProvider.token;
         final response = await http.delete(
           Uri.parse('${ApiConstants.baseUrl}/teacher/study-materials/$id'),
           headers: {'Authorization': 'Bearer $token'},
@@ -174,7 +174,6 @@ class _StudyMaterialPageState extends State<StudyMaterialPage> {
       itemCount: _materialsList.length,
       itemBuilder: (context, index) {
         final item = _materialsList[index];
-        final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
           child: ListTile(
@@ -386,7 +385,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
                 children: [
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Class & Section'),
-                    value: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
+                    initialValue: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
                     items: _classes.map((c) {
                       return DropdownMenuItem(
                         value: '${c['class_id']}-${c['section_id']}',
@@ -399,7 +398,7 @@ class _CreateStudyMaterialPageState extends State<CreateStudyMaterialPage> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
                     decoration: const InputDecoration(labelText: 'Select Subject'),
-                    value: _selectedSubjectId,
+                    initialValue: _selectedSubjectId,
                     items: _subjects.map((s) => DropdownMenuItem<int>(value: s['id'], child: Text(s['name']))).toList(),
                     onChanged: (val) => setState(() => _selectedSubjectId = val),
                     validator: (v) => v == null ? 'Required' : null,

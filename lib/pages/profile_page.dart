@@ -658,7 +658,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _correctionField,
+          initialValue: _correctionField,
           decoration: InputDecoration(
             labelText: 'Select Field to Correct',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
@@ -671,10 +671,16 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
           onChanged: (val) => setState(() {
             _correctionField = val;
-            if (val == 'name') _currentValueController.text = profileData?['name'] ?? 'N/A';
-            else if (val == 'employee_id') _currentValueController.text = profileData?['employee_id'] ?? 'N/A';
-            else if (val == 'dob') _currentValueController.text = formatDate(profileData?['dob']) ?? 'N/A';
-            else if (val == 'gender') _currentValueController.text = profileData?['gender'] ?? 'N/A';
+            if (val == 'name') {
+              _currentValueController.text = profileData?['name'] ?? 'N/A';
+            } else if (val == 'employee_id') {
+              _currentValueController.text = profileData?['employee_id'] ?? 'N/A';
+            } else if (val == 'dob') {
+              final dob = formatDate(profileData?['dob']);
+              _currentValueController.text = dob.isEmpty ? 'N/A' : dob;
+            } else if (val == 'gender') {
+              _currentValueController.text = profileData?['gender'] ?? 'N/A';
+            }
           }),
         ),
         if (_correctionField != null) ...[
@@ -745,7 +751,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

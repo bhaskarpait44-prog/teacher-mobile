@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../widgets/branded_loader.dart';
 import '../utils/constants.dart';
 
 class LoginPage extends StatefulWidget {
@@ -73,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
     final controller = TextEditingController(text: ApiConstants.serverIp);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Server Settings'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -94,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -102,13 +101,13 @@ class _LoginPageState extends State<LoginPage> {
               String ip = controller.text.trim();
               if (ip.isNotEmpty) {
                 await ApiConstants.setServerIp(ip);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(content: Text('Server URL updated to: ${ApiConstants.baseUrl}')),
                   );
                 }
               }
-              if (mounted) Navigator.pop(context);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
             },
             child: const Text('Save'),
           ),
@@ -202,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         } else {
-                          if (mounted) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Could not open reset password link')),
                             );

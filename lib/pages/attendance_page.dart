@@ -211,7 +211,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   bool _isLoading = true;
   bool _isSaving = false;
   List<dynamic> _students = [];
-  Map<int, String> _attendance = {};
+  final Map<int, String> _attendance = {};
   DateTime _selectedDate = DateTime.now();
   String? _errorMessage;
   bool _requiresReason = false;
@@ -838,7 +838,7 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: DropdownButtonFormField<String>(
-        value: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
+        initialValue: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
         decoration: const InputDecoration(labelText: 'Select Class', isDense: true),
         items: _classes.map((c) {
           return DropdownMenuItem(
@@ -883,7 +883,7 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
         children: [
           Expanded(
             child: DropdownButtonFormField<int>(
-              value: _selectedMonth,
+              initialValue: _selectedMonth,
               decoration: const InputDecoration(labelText: 'Month', isDense: true),
               items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(getMonthName(i + 1)))),
               onChanged: (val) {
@@ -897,7 +897,7 @@ class _AttendanceReportsPageState extends State<AttendanceReportsPage> with Sing
           const SizedBox(width: 16),
           Expanded(
             child: DropdownButtonFormField<int>(
-              value: _selectedYear,
+              initialValue: _selectedYear,
               decoration: const InputDecoration(labelText: 'Year', isDense: true),
               items: List.generate(3, (i) => DropdownMenuItem(value: 2024 + i, child: Text('${2024 + i}'))),
               onChanged: (val) {

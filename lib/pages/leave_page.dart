@@ -73,10 +73,12 @@ class _LeavePageState extends State<LeavePage> {
   }
 
   Future<void> _cancelApplication(int id) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel Application'),
+        title: const Text('Cancel Leave Application'),
         content: const Text('Are you sure you want to cancel this leave application?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
@@ -87,8 +89,6 @@ class _LeavePageState extends State<LeavePage> {
 
     if (confirmed == true) {
       try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final token = authProvider.token;
         final response = await http.patch(
           Uri.parse('${ApiConstants.baseUrl}/teacher/leave/$id/cancel'),
           headers: {'Authorization': 'Bearer $token'},
@@ -385,7 +385,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<String>(
-                  value: _leaveType,
+                  initialValue: _leaveType,
                   decoration: const InputDecoration(labelText: 'Leave Type'),
                   items: const [
                     DropdownMenuItem(value: 'casual', child: Text('Casual Leave')),

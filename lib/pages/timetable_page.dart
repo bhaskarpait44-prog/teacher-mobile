@@ -436,7 +436,7 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
         if (myDuties.isNotEmpty) ...[
           _buildSubHeader('Invigilation Duties', Icons.security_rounded, Colors.orange),
           const SizedBox(height: 12),
-          ...myDuties.map((exam) => _buildExamCard(exam, isDuty: true)).toList(),
+          ...myDuties.map((exam) => _buildExamCard(exam, isDuty: true)),
           const SizedBox(height: 24),
         ],
         if (groupedByClass.isNotEmpty) ...[
@@ -452,10 +452,10 @@ class _TimetablePageState extends State<TimetablePage> with TickerProviderStateM
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
-              ...entry.value.map((exam) => _buildExamCard(exam)).toList(),
+              ...entry.value.map((exam) => _buildExamCard(exam)),
               const SizedBox(height: 12),
             ],
-          )).toList(),
+          )),
         ],
       ],
     );

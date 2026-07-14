@@ -234,7 +234,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                 children: [
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Target Audience'),
-                    value: _selectedAudience,
+                    initialValue: _selectedAudience,
                     items: const [
                       DropdownMenuItem(value: 'class', child: Text('Whole Class')),
                       DropdownMenuItem(value: 'section', child: Text('Specific Section')),
@@ -254,7 +254,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Class & Section'),
-                    value: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
+                    initialValue: _selectedClassId != null ? '$_selectedClassId-$_selectedSectionId' : null,
                     items: _classes.map((c) {
                       return DropdownMenuItem(
                         value: '${c['class_id']}-${c['section_id']}',
@@ -268,7 +268,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                   if (_selectedAudience == 'subject_wise') ...[
                     DropdownButtonFormField<int>(
                       decoration: const InputDecoration(labelText: 'Select Subject'),
-                      value: _selectedSubjectId,
+                      initialValue: _selectedSubjectId,
                       items: _subjects.map((s) => DropdownMenuItem<int>(value: s['id'], child: Text(s['name']))).toList(),
                       onChanged: (val) => setState(() => _selectedSubjectId = val),
                       validator: (v) => v == null ? 'Required' : null,
@@ -278,7 +278,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                   if (_selectedAudience == 'students') ...[
                     DropdownButtonFormField<int>(
                       decoration: const InputDecoration(labelText: 'Select Student'),
-                      value: _selectedStudentId,
+                      initialValue: _selectedStudentId,
                       items: _students.map((s) => DropdownMenuItem<int>(value: s['student_id'], child: Text('${s['first_name']} ${s['last_name']}'))).toList(),
                       onChanged: (val) => setState(() => _selectedStudentId = val),
                       validator: (v) => v == null ? 'Required' : null,
@@ -287,7 +287,7 @@ class _CreateNoticePageState extends State<CreateNoticePage> {
                   ],
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Priority'),
-                    value: _selectedPriority,
+                    initialValue: _selectedPriority,
                     items: const [
                       DropdownMenuItem(value: 'normal', child: Text('Normal')),
                       DropdownMenuItem(value: 'info', child: Text('Info')),
