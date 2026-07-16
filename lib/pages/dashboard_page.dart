@@ -315,6 +315,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     final myClasses = dashboardData?['my_class'] as List? ?? [];
     final subjectClasses = dashboardData?['subject_classes'] as List? ?? [];
     final upcomingExams = dashboardData?['upcoming_exams'] as List?;
+    final bool isHoliday = dashboardData?['is_holiday'] ?? false;
+    final String holidayName = dashboardData?['holiday_name'] ?? 'Declared Holiday';
 
     final seen = <String>{};
     final uniqueClasses = [...myClasses, ...subjectClasses].where((c) {
@@ -340,7 +342,7 @@ class _DashboardHomeState extends State<DashboardHome> {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage()));
             }),
             const SizedBox(height: 12),
-            _buildScheduleList(schedule),
+            _buildScheduleList(schedule, isHoliday, holidayName),
             if (upcomingExams != null && upcomingExams.isNotEmpty) ...[
               const SizedBox(height: 32),
               _buildSectionHeader('Upcoming Exams', () {
@@ -542,7 +544,11 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildScheduleList(List? schedule) {
+  Widget _buildScheduleList(List? schedule, bool isHoliday, String holidayName) {
+    if (isHoliday) {
+      return _buildHolidayBanner(holidayName);
+    }
+
     if (schedule == null || schedule.isEmpty) {
       return Card(
         child: Padding(
@@ -616,6 +622,58 @@ class _DashboardHomeState extends State<DashboardHome> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildHolidayBanner(String holidayName) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.beach_access_rounded,
+              color: colorScheme.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'School is Closed Today',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  holidayName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
