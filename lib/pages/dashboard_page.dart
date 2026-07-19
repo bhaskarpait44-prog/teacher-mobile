@@ -18,6 +18,8 @@ import 'login_page.dart';
 import 'profile_page.dart';
 import 'notice_page.dart';
 import 'study_material_page.dart';
+import 'qr_scanner_page.dart';
+
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -222,7 +224,12 @@ class _DashboardHomeState extends State<DashboardHome> {
         ),
         title: const Text('EduCore', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QrScannerPage())),
+          ),
           Consumer<NoticeProvider>(
+
             builder: (context, noticeProvider, _) {
               return Stack(
                 children: [
