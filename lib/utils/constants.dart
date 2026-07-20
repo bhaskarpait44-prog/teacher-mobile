@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConstants {
-  static const String defaultServerIp = '10.226.18.216:5000';
+  static const String defaultServerIp = '10.97.34.216:5000';
   static String _currentServerIp = defaultServerIp;
 
   static Future<void> init() async {
